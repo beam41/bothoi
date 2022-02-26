@@ -9,7 +9,7 @@ import (
 
 type GatewayPayload struct {
 	Op uint8       `json:"op"`
-	S  *uint64     `json:"s"`
+	S  *uint64     `json:"s,omitempty"`
 	T  string      `json:"t"`
 	D  interface{} `json:"d"`
 }

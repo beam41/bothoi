@@ -6,10 +6,10 @@ import (
 	"log"
 	"math/rand"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/mitchellh/mapstructure"
 )
 
 // connect to the discord gateway.
@@ -30,7 +30,7 @@ func connection(isResume bool) {
 
 	if !isResume {
 		c.WriteJSON(models.NewIdentify())
-		SessionReady.Add(1)
+		sessionReady.Add(1)
 	} else {
 		c.WriteJSON(models.NewResume(sequenceNumber, os.Getenv("SESSION_ID")))
 	}
@@ -46,6 +46,10 @@ func connection(isResume bool) {
 			err := c.ReadJSON(&payload)
 			if err != nil {
 				log.Println(err)
+				if strings.HasPrefix(err.Error(), "websocket: close 1001") {
+					c.WriteJSON(models.NewIdentify())
+					sessionReady.Add(1)
+				}
 				continue
 			}
 			log.Println("incoming: ", payload)
@@ -58,10 +62,10 @@ func connection(isResume bool) {
 			case gateway_opcode.Heartbeat:
 				immediateHeartbeat <- true
 			case gateway_opcode.Dispatch:
-				go dispatchHandler(payload)
+				go dispatchHandler(c, payload)
 			case gateway_opcode.InvalidSession:
 				c.WriteJSON(models.NewIdentify())
-				SessionReady.Add(1)
+				sessionReady.Add(1)
 			}
 		}
 	}()
@@ -97,5 +101,3 @@ func WriteJSONLog(c *websocket.Conn, v interface{}) error {
 	log.Println("outgoing: ", v)
 	return c.WriteJSON(v)
 }
-
-
