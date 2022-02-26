@@ -9,19 +9,35 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/mitchellh/mapstructure"
 )
 
 // connect to the discord gateway.
-// this must called last in main because infinite loop that keep heartbeat.
 func Connect() {
+	resume := false
+	for {
+		connection(resume)
+		resume = true
+	}
+}
+
+func connection(isResume bool) {
 	c, _, err := websocket.DefaultDialer.Dial(os.Getenv("GATEWAY_URL"), nil)
 	if err != nil {
-		log.Panicln(err)
+		log.Fatalln(err)
+	}
+	defer c.Close()
+
+	if !isResume {
+		c.WriteJSON(models.NewIdentify())
+		SessionReady.Add(1)
+	} else {
+		c.WriteJSON(models.NewResume(sequenceNumber, os.Getenv("SESSION_ID")))
 	}
 
-	c.WriteJSON(models.NewIdentify())
-
 	heatbeatInterval := make(chan int)
+	heatbeatAcked := make(chan bool)
+	immediateHeartbeat := make(chan bool)
 
 	// receive the gateway response
 	go func() {
@@ -29,15 +45,24 @@ func Connect() {
 			var payload models.GatewayPayload
 			err := c.ReadJSON(&payload)
 			if err != nil {
-				log.Panicln(err)
-				return
+				log.Println(err)
+				continue
 			}
 			log.Println("incoming: ", payload)
+			setSequenceNumber(payload.S)
 			switch payload.Op {
 			case gateway_opcode.Hello:
 				heatbeatInterval <- int(payload.D.(map[string]interface{})["heartbeat_interval"].(float64))
+			case gateway_opcode.HeartbeatAck:
+				heatbeatAcked <- true
+			case gateway_opcode.Heartbeat:
+				immediateHeartbeat <- true
+			case gateway_opcode.Dispatch:
+				go dispatchHandler(payload)
+			case gateway_opcode.InvalidSession:
+				c.WriteJSON(models.NewIdentify())
+				SessionReady.Add(1)
 			}
-			setSequenceNumber(payload.S)
 		}
 	}()
 
@@ -45,12 +70,25 @@ func Connect() {
 	interval := <-heatbeatInterval
 
 	time.Sleep(time.Duration(float64(interval)*rand.Float64()) * time.Millisecond)
-	WriteJSONLog(c, models.NewHeartbeat(0))
+	WriteJSONLog(c, models.NewHeartbeat(nil))
 
 	for {
-		time.Sleep(time.Duration(interval) * time.Millisecond)
+		// wait for heartbeat ack
+		select {
+		case <-heatbeatAcked:
+		case <-time.After(time.Duration(interval) * time.Millisecond):
+			// uh oh timeout, reconnect
+			log.Println("timeout, attempting to reconnect")
+			c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseServiceRestart, ""))
+			return
+		}
+		// wait for next heartbeat
+		select {
+		case <-immediateHeartbeat:
+		case <-time.After(time.Duration(interval) * time.Millisecond):
+		}
 		sequenceNumberLock.Lock()
-		WriteJSONLog(c, models.NewHeartbeat(*sequenceNumber))
+		WriteJSONLog(c, models.NewHeartbeat(sequenceNumber))
 		sequenceNumberLock.Unlock()
 	}
 }
@@ -59,3 +97,5 @@ func WriteJSONLog(c *websocket.Conn, v interface{}) error {
 	log.Println("outgoing: ", v)
 	return c.WriteJSON(v)
 }
+
+

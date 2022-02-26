@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bothoi/app_command"
 	"bothoi/gateway"
 	"log"
 
@@ -11,8 +12,8 @@ func main() {
 	err := godotenv.Load()
 
 	if err != nil {
-		log.Fatalf("Error loading .env file")
+		log.Fatalln("Error loading .env file")
 	}
-
+	app_command.Register()
 	gateway.Connect()
 }
