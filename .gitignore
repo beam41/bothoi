@@ -22,3 +22,6 @@ go.work
 
 # environment variables
 .env
+
+# my discord json ref
+ref

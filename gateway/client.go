@@ -3,6 +3,8 @@ package gateway
 import (
 	"bothoi/models"
 	"bothoi/references/gateway_opcode"
+	"bothoi/states"
+	"encoding/json"
 	"log"
 	"math/rand"
 	"os"
@@ -30,7 +32,7 @@ func connection(isResume bool) {
 
 	if !isResume {
 		c.WriteJSON(models.NewIdentify())
-		sessionReady.Add(1)
+		states.SessionStateReady.Add(1)
 	} else {
 		c.WriteJSON(models.NewResume(sequenceNumber, os.Getenv("SESSION_ID")))
 	}
@@ -48,11 +50,13 @@ func connection(isResume bool) {
 				log.Println(err)
 				if strings.HasPrefix(err.Error(), "websocket: close 1001") {
 					c.WriteJSON(models.NewIdentify())
-					sessionReady.Add(1)
+					states.SessionStateReady.Add(1)
 				}
 				continue
 			}
-			log.Println("incoming: ", payload)
+			jsonDat, err := json.Marshal(payload)
+			log.Println("incoming: ", payload, string(jsonDat))
+			// log.Println("incoming: ", payload)
 			setSequenceNumber(payload.S)
 			switch payload.Op {
 			case gateway_opcode.Hello:
@@ -65,7 +69,7 @@ func connection(isResume bool) {
 				go dispatchHandler(c, payload)
 			case gateway_opcode.InvalidSession:
 				c.WriteJSON(models.NewIdentify())
-				sessionReady.Add(1)
+				states.SessionStateReady.Add(1)
 			}
 		}
 	}()

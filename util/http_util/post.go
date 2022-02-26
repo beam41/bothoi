@@ -29,12 +29,16 @@ func Post(url string, body *bytes.Buffer, header map[string]string) ([]byte, err
 	if err != nil {
 		return nil, err
 	}
+	for h, v := range header {
+		req.Header.Add(h, v)
+	}
 
 	client := &http.Client{}
 	res, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
+
 
 	resBody, err := ioutil.ReadAll(res.Body)
 	res.Body.Close()
