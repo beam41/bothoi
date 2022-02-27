@@ -1,42 +1,17 @@
 package models
 
 type SessionState struct {
-	V                    int8                     `json:"v"`
-	UserSettings         SessionStateUserSettings `json:"user_settings"`
-	User                 SessionStateUser         `json:"user"`
-	Shard                []int16                  `json:"shard"`
-	SessionID            string                   `json:"session_id"`
-	Relationships        []interface{}            `json:"relationships"`
-	PrivateChannels      []interface{}            `json:"private_channels"`
-	Presences            []interface{}            `json:"presences"`
-	Guilds               []SessionStateGuild      `json:"guilds"`
-	GuildJoinRequests    []interface{}            `json:"guild_join_requests"`
-	GeoOrderedRTCRegions []string                 `json:"geo_ordered_rtc_regions"`
-	Application          SessionStateApplication  `json:"application"`
-	Trace                []string                 `json:"_trace"`
-}
-
-type SessionStateApplication struct {
-	ID    string `json:"id"`
-	Flags int64  `json:"flags"`
-}
-
-type SessionStateGuild struct {
-	Unavailable bool   `json:"unavailable"`
-	ID          string `json:"id"`
-}
-
-type SessionStateUser struct {
-	Verified      bool   `json:"verified"`
-	Username      string `json:"username"`
-	MfaEnabled    bool   `json:"mfa_enabled"`
-	ID            string `json:"id"`
-	Flags         int32  `json:"flags"`
-	Email         string `json:"email"`
-	Discriminator string `json:"discriminator"`
-	Bot           bool   `json:"bot"`
-	Avatar        string `json:"avatar"`
-}
-
-type SessionStateUserSettings struct {
+	V                    int8               `json:"v" mapstructure:"v"`
+	UserSettings         interface{}        `json:"user_settings" mapstructure:"user_settings"`
+	User                 User               `json:"user" mapstructure:"user"`
+	Shard                []int16            `json:"shard" mapstructure:"shard"`
+	SessionID            string             `json:"session_id" mapstructure:"session_id"`
+	Relationships        []interface{}      `json:"relationships" mapstructure:"relationships"`
+	PrivateChannels      []interface{}      `json:"private_channels" mapstructure:"private_channels"`
+	Presences            []interface{}      `json:"presences" mapstructure:"presences"`
+	Guilds               []UnavailableGuild `json:"guilds" mapstructure:"guilds"`
+	GuildJoinRequests    []interface{}      `json:"guild_join_requests" mapstructure:"guild_join_requests"`
+	GeoOrderedRTCRegions []string           `json:"geo_ordered_rtc_regions" mapstructure:"geo_ordered_rtc_regions"`
+	Application          Application        `json:"application" mapstructure:"application"`
+	Trace                []string           `json:"_trace" mapstructure:"_trace"`
 }

@@ -4,6 +4,6 @@ import (
 	"bothoi/models"
 )
 
-func MapInteraction(data *models.Interaction) {
+func MapInteractionExecute(data *models.Interaction) {
 	executorList[data.Data.Name](data)
 }

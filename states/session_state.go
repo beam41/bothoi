@@ -5,6 +5,6 @@ import (
 	"sync"
 )
 
-var SessionState = models.SessionState{}
+var SessionState = &models.SessionState{}
 
 var SessionStateReady sync.WaitGroup

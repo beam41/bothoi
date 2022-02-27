@@ -8,10 +8,10 @@ import (
 )
 
 type GatewayPayload struct {
-	Op uint8       `json:"op"`
-	S  *uint64     `json:"s,omitempty"`
-	T  string      `json:"t"`
-	D  interface{} `json:"d"`
+	Op uint8       `json:"op" mapstructure:"op"`
+	S  *uint64     `json:"s,omitempty" mapstructure:"s"`
+	T  string      `json:"t" mapstructure:"t"`
+	D  interface{} `json:"d" mapstructure:"d"`
 }
 
 func NewHeartbeat(s *uint64) GatewayPayload {

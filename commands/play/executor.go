@@ -2,8 +2,11 @@ package play
 
 import (
 	"bothoi/models"
+	"bothoi/references/embed_color"
+	"bothoi/states"
 	"bothoi/util"
 	"bothoi/util/http_util"
+	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -11,28 +14,23 @@ import (
 
 func Execute(data *models.Interaction) {
 	options := util.MapInteractionOption(data.Data.Options)
+	userVoiceState := states.VoiceState[data.Member.User.ID]
 
-	// response
-	response := models.InteractionResponse{
-		Type: 4,
-		Data: models.InteractionResponseData{
-			Embeds: []models.Embed{
-				{
-					Title:       "Play a song",
-					Description: "Playing " + options["song"].Value.(string) + "\n" + "requested by <@" + data.Member.User.ID + ">",
-					Footer: &models.EmbedFooter{
-						Text: "Playing",
-					},
-					Author: &models.EmbedAuthor{
-						Name:    "Playing",
-						IconUrl: "https://avatars.githubusercontent.com/u/1791353?v=4",
-					},
-				},
-			},
-			AllowedMentions: &models.AllowedMention{
-				Parse: []string{"users"},
-			},
-		},
+	var response models.InteractionResponse
+	if userVoiceState == nil || userVoiceState.GuildID != data.GuildID || userVoiceState.ChannelID == "" {
+		response = util.BuildBothoiPlayerResponse(
+			"Can't play a song :(",
+			fmt.Sprintf("<@%s> not in voice channel", data.Member.User.Username),
+			"Error",
+			embed_color.Error,
+		)
+	} else {
+		response = util.BuildBothoiPlayerResponse(
+			"Play a song",
+			fmt.Sprintf("Playing %s\nrequested by <@%s>", options["song"].Value.(string), data.Member.User.ID),
+			"Playing",
+			embed_color.Playing,
+		)
 	}
 
 	url := os.Getenv("INTERACTION_RESPONSE_ENDPOINT")
