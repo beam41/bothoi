@@ -1,13 +1,13 @@
 package gateway
 
 import (
+	"bothoi/config"
 	"bothoi/models"
 	"bothoi/references/gateway_opcode"
 	"bothoi/states"
 	"encoding/json"
 	"log"
 	"math/rand"
-	"os"
 	"strings"
 	"time"
 
@@ -24,7 +24,7 @@ func Connect() {
 }
 
 func connection(isResume bool) {
-	c, _, err := websocket.DefaultDialer.Dial(os.Getenv("GATEWAY_URL"), nil)
+	c, _, err := websocket.DefaultDialer.Dial(config.GATEWAY_URL, nil)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -34,7 +34,7 @@ func connection(isResume bool) {
 		c.WriteJSON(models.NewIdentify())
 		states.SessionStateReady.Add(1)
 	} else {
-		c.WriteJSON(models.NewResume(sequenceNumber, os.Getenv("SESSION_ID")))
+		c.WriteJSON(models.NewResume(sequenceNumber, states.SessionState.SessionID))
 	}
 
 	heatbeatInterval := make(chan int)

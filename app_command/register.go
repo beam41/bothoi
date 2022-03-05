@@ -1,19 +1,26 @@
 package app_command
 
 import (
+	"bothoi/config"
 	"bothoi/util/http_util"
 	"log"
-	"os"
 )
 
 // do register app command
 func Register() {
 	for _, command := range commandList {
 		log.Println("app command request: ", command)
-		header := make(map[string]string)
-		header["Authorization"] = "Bot " + os.Getenv("BOT_TOKEN")
+		header := map[string]string{}
+		header["Authorization"] = "Bot " + config.BOT_TOKEN
 
-		res, err := http_util.PostJsonH(os.Getenv("APP_COMMAND_ENDPOINT"), command, header)
+		if (config.DEVELOPMENT) {
+			_, errD := http_util.PostJsonH(config.APP_COMMAND_GUILD_ENDPOINT, command, header)
+			if errD != nil {
+				log.Println(errD)
+				continue
+			}
+		}
+		res, err := http_util.PostJsonH(config.APP_COMMAND_ENDPOINT, command, header)
 
 		if err != nil {
 			log.Println(err)

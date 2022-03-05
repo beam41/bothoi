@@ -4,7 +4,6 @@ go 1.17
 
 require (
 	github.com/gorilla/websocket v1.5.0
-	github.com/joho/godotenv v1.4.0
 	github.com/jonas747/dca/v2 v2.0.0
 	github.com/kkdai/youtube/v2 v2.7.10
 	github.com/mitchellh/mapstructure v1.4.3

@@ -1,10 +1,8 @@
 package models
 
 import (
+	"bothoi/config"
 	"bothoi/references/gateway_opcode"
-	"log"
-	"os"
-	"strconv"
 )
 
 type GatewayPayload struct {
@@ -22,15 +20,11 @@ func NewHeartbeat(s *uint64) GatewayPayload {
 }
 
 func NewIdentify() GatewayPayload {
-	intent, err := strconv.Atoi(os.Getenv("GATEWAY_INTENT"))
-	if err != nil {
-		log.Fatalln("Intent is not a number")
-	}
 	return GatewayPayload{
 		Op: gateway_opcode.Identify,
 		D: map[string]interface{}{
-			"token":   os.Getenv("BOT_TOKEN"),
-			"intents": intent,
+			"token":   config.BOT_TOKEN,
+			"intents": config.GATEWAY_INTENT,
 			"properties": map[string]interface{}{
 				"$os":      "linux",
 				"$browser": "bothoi",
@@ -45,7 +39,7 @@ func NewResume(s *uint64, sessionId string) GatewayPayload {
 	return GatewayPayload{
 		Op: gateway_opcode.Resume,
 		D: map[string]interface{}{
-			"token":      os.Getenv("BOT_TOKEN"),
+			"token":      config.BOT_TOKEN,
 			"session_id": sessionId,
 			"seq":        s,
 		},

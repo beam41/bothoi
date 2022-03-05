@@ -20,8 +20,9 @@
 # Go workspace file
 go.work
 
-# environment variables
-.env
+# config
+config/*
+!config/config_example.go
 
 # my discord json ref
-ref
+ref/

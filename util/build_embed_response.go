@@ -2,7 +2,7 @@ package util
 
 import "bothoi/models"
 
-func BuildBothoiPlayerResponse(title string, desc string, footerText string, color int32) models.InteractionResponse {
+func BuildPlayerResponse(title string, desc string, footerText string, color int32) models.InteractionResponse {
 	return models.InteractionResponse{
 		Type: 4,
 		Data: models.InteractionResponseData{

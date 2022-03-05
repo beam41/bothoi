@@ -9,7 +9,7 @@ import (
 
 // post json
 func PostJson(url string, body interface{}) ([]byte, error) {
-	header := make(map[string]string)
+	header := map[string]string{}
 	return PostJsonH(url, body, header)
 }
 
