@@ -27,7 +27,7 @@ func ExampleClient() {
 	encodeSession, err := dca.EncodeFile(x, dca.StdEncodeOptions)
 	// Make sure everything is cleaned up, that for example the encoding process if any issues happened isnt lingering around
 	defer encodeSession.Cleanup()
-
+	
 	output, err := os.Create("output.dca")
 	if err != nil {
 		// Handle the error

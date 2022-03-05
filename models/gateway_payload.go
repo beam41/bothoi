@@ -45,3 +45,15 @@ func NewResume(s *uint64, sessionId string) GatewayPayload {
 		},
 	}
 }
+
+func NewVoiceStateUpdate(guildId, voiceId string, mute, deaf bool) GatewayPayload {
+	return GatewayPayload{
+		Op: gateway_opcode.VoiceStateUpdate,
+		D: map[string]interface{}{
+			"guild_id":   guildId,
+			"channel_id": voiceId,
+			"self_mute":  mute,
+			"self_deaf":  deaf,
+		},
+	}
+}

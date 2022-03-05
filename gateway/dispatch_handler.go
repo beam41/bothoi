@@ -4,6 +4,7 @@ import (
 	"bothoi/app_command"
 	"bothoi/models"
 	"bothoi/states"
+	"log"
 
 	"github.com/gorilla/websocket"
 	"github.com/mitchellh/mapstructure"
@@ -16,9 +17,9 @@ func dispatchHandler(c *websocket.Conn, payload models.GatewayPayload) {
 		states.SessionStateReady.Done()
 	case "INTERACTION_CREATE":
 		states.SessionStateReady.Wait()
-		var data *models.Interaction = new(models.Interaction)
-		mapstructure.Decode(payload.D, data)
-		app_command.MapInteractionExecute(data)
+		var data models.Interaction
+		mapstructure.Decode(payload.D, &data)
+		app_command.MapInteractionExecute(&data, c)
 	case "GUILD_CREATE":
 		states.SessionStateReady.Wait()
 		var data models.Guild
@@ -35,10 +36,29 @@ func dispatchHandler(c *websocket.Conn, payload models.GatewayPayload) {
 		states.SessionStateReady.Wait()
 		var data *models.VoiceState = new(models.VoiceState)
 		mapstructure.Decode(payload.D, data)
-		states.AddVoiceState(data)
+		if data.UserID != states.SessionState.User.ID {
+			states.AddVoiceState(data)
+		} else {
+			states.SetSessionId(data.GuildID, data.SessionID)
+			if states.SongQueue[data.GuildID].VoiceServer != nil {
+				StartVoiceClient(data.GuildID)
+			}
+		}
+	case "VOICE_SERVER_UPDATE":
+		states.SessionStateReady.Wait()
+		var data models.VoiceServer
+		mapstructure.Decode(payload.D, &data)
+		states.SetVoiceServer(data.GuildID, &data)
+		if states.SongQueue[data.GuildID].SessionID != nil {
+			StartVoiceClient(data.GuildID)
+		}
 	case "GUILD_UPDATE":
 		// not important now
 	case "GUILD_DELETE":
 		// not important now
 	}
+}
+
+func StartVoiceClient(guildId string) {
+	log.Println("😘")
 }

@@ -10,9 +10,11 @@ import (
 	"fmt"
 	"log"
 	"strings"
+
+	"github.com/gorilla/websocket"
 )
 
-func Execute(data *models.Interaction) {
+func Execute(data *models.Interaction, c *websocket.Conn) {
 	options := util.MapInteractionOption(data.Data.Options)
 	userVoiceState := states.VoiceState[data.Member.User.ID]
 
@@ -40,7 +42,7 @@ func Execute(data *models.Interaction) {
 	}
 	var songQ = states.SongQueue[data.GuildID]
 	if songQ != nil {
-		if songQ.CurrVoiceChannelID != userVoiceState.ChannelID {
+		if songQ.VoiceChannelID != userVoiceState.ChannelID {
 			response = util.BuildPlayerResponse(
 				"Can't play a song :(",
 				fmt.Sprintf("<@%s> not in the same voice channel as bot", data.Member.User.Username),
@@ -49,7 +51,7 @@ func Execute(data *models.Interaction) {
 			)
 			return
 		}
-		_ = append(songQ.Songs, models.SongItem{
+		states.AppendSongToSongQueue(data.GuildID, models.SongItem{
 			YtID:        options["song"].Value.(string),
 			Title:       options["song"].Value.(string),
 			Duration:    0,
@@ -65,10 +67,23 @@ func Execute(data *models.Interaction) {
 					RequesterID: data.Member.User.ID,
 				},
 			},
-			CurrVoiceChannelID: userVoiceState.ChannelID,
-			GuildID:            data.GuildID,
+			VoiceChannelID: userVoiceState.ChannelID,
+			GuildID:        data.GuildID,
 		}
-		states.SongQueue[data.GuildID] = newSongQ
+		states.AddGuildToSongQueue(newSongQ)
+		createVoice := models.NewVoiceStateUpdate(data.GuildID, userVoiceState.ChannelID, false, true)
+		err := c.WriteJSON(createVoice)
+		if err != nil {
+			log.Println(err)
+			response = util.BuildPlayerResponse(
+				"Can't play a song :(",
+				"Unknown Error",
+				"Error",
+				embed_color.Error,
+			)
+			states.RemoveGuildFromSongQueue(data.GuildID)
+			return
+		}
 	}
 	log.Println(states.SongQueue[data.GuildID])
 	response = util.BuildPlayerResponse(

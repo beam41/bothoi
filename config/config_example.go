@@ -11,4 +11,5 @@ const (
 	APP_COMMAND_ENDPOINT          = ""
 	INTERACTION_RESPONSE_ENDPOINT = "https://discord.com/api/v8/interactions/<interaction_id>/<interaction_token>/callback"
 	APP_COMMAND_GUILD_ENDPOINT    = ""
+	VOICE_GATEWAY_VERSION         = 4
 )

@@ -10,9 +10,11 @@ import (
 	"fmt"
 	"log"
 	"strings"
+
+	"github.com/gorilla/websocket"
 )
 
-func Execute(data *models.Interaction) {
+func Execute(data *models.Interaction, _ *websocket.Conn) {
 	var response models.InteractionResponse
 	// do response to interaction
 	defer func() {
