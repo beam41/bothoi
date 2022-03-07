@@ -3,6 +3,8 @@ package models
 import (
 	"bothoi/config"
 	"bothoi/references/gateway_opcode"
+	"bothoi/references/voice_opcode"
+	"strconv"
 )
 
 type GatewayPayload struct {
@@ -54,6 +56,51 @@ func NewVoiceStateUpdate(guildId, voiceId string, mute, deaf bool) GatewayPayloa
 			"channel_id": voiceId,
 			"self_mute":  mute,
 			"self_deaf":  deaf,
+		},
+	}
+}
+
+func NewVoiceIdentify(guildId, userId, sessionId, token string) GatewayPayload {
+	return GatewayPayload{
+		Op: voice_opcode.Identify,
+		D: map[string]interface{}{
+			"server_id":  guildId,
+			"user_id":    userId,
+			"session_id": sessionId,
+			"token":      token,
+		},
+	}
+}
+
+func NewVoiceHeartbeat(s int64) GatewayPayload {
+	x := strconv.FormatInt(s, 10)
+	return GatewayPayload{
+		Op: voice_opcode.Heartbeat,
+		D:  x,
+	}
+}
+
+func NewVoiceSelectProtocol(address string, port uint16, mode string) GatewayPayload {
+	return GatewayPayload{
+		Op: voice_opcode.SelectProtocol,
+		D: map[string]interface{}{
+			"protocol": "udp",
+			"data": map[string]interface{}{
+				"address": address,
+				"port":    port,
+				"mode":    mode,
+			},
+		},
+	}
+}
+
+func NewVoiceSpeaking(ssrc uint32) GatewayPayload {
+	return GatewayPayload{
+		Op: voice_opcode.Speaking,
+		D: map[string]interface{}{
+			"speaking": 1 << 0,
+			"delay":    0,
+			"ssrc":     ssrc,
 		},
 	}
 }

@@ -6,6 +6,7 @@ type SongQueue struct {
 	SessionID      *string
 	Songs          []SongItem
 	VoiceServer    *VoiceServer
+
 }
 
 type SongItem struct {

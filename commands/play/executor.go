@@ -7,6 +7,7 @@ import (
 	"bothoi/states"
 	"bothoi/util"
 	"bothoi/util/http_util"
+	"bothoi/util/ws_util"
 	"fmt"
 	"log"
 	"strings"
@@ -72,7 +73,7 @@ func Execute(data *models.Interaction, c *websocket.Conn) {
 		}
 		states.AddGuildToSongQueue(newSongQ)
 		createVoice := models.NewVoiceStateUpdate(data.GuildID, userVoiceState.ChannelID, false, true)
-		err := c.WriteJSON(createVoice)
+		err := ws_util.WriteJSONLog(c, createVoice)
 		if err != nil {
 			log.Println(err)
 			response = util.BuildPlayerResponse(

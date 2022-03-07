@@ -2,9 +2,10 @@ package gateway
 
 import (
 	"bothoi/app_command"
+	"bothoi/config"
 	"bothoi/models"
 	"bothoi/states"
-	"log"
+	"bothoi/voice"
 
 	"github.com/gorilla/websocket"
 	"github.com/mitchellh/mapstructure"
@@ -36,12 +37,12 @@ func dispatchHandler(c *websocket.Conn, payload models.GatewayPayload) {
 		states.SessionStateReady.Wait()
 		var data *models.VoiceState = new(models.VoiceState)
 		mapstructure.Decode(payload.D, data)
-		if data.UserID != states.SessionState.User.ID {
+		if data.UserID != config.BOT_ID {
 			states.AddVoiceState(data)
 		} else {
 			states.SetSessionId(data.GuildID, data.SessionID)
 			if states.SongQueue[data.GuildID].VoiceServer != nil {
-				StartVoiceClient(data.GuildID)
+				StartVoiceClient(states.SongQueue[data.GuildID])
 			}
 		}
 	case "VOICE_SERVER_UPDATE":
@@ -50,7 +51,7 @@ func dispatchHandler(c *websocket.Conn, payload models.GatewayPayload) {
 		mapstructure.Decode(payload.D, &data)
 		states.SetVoiceServer(data.GuildID, &data)
 		if states.SongQueue[data.GuildID].SessionID != nil {
-			StartVoiceClient(data.GuildID)
+			StartVoiceClient(states.SongQueue[data.GuildID])
 		}
 	case "GUILD_UPDATE":
 		// not important now
@@ -59,6 +60,9 @@ func dispatchHandler(c *websocket.Conn, payload models.GatewayPayload) {
 	}
 }
 
-func StartVoiceClient(guildId string) {
-	log.Println("😘")
+func StartVoiceClient(songQueue *models.SongQueue) {
+	client := &voice.VoiceClient{
+		SongQueue:          songQueue,
+	}
+	go client.Connect()
 }

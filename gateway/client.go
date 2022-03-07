@@ -5,6 +5,7 @@ import (
 	"bothoi/models"
 	"bothoi/references/gateway_opcode"
 	"bothoi/states"
+	"bothoi/util/ws_util"
 	"encoding/json"
 	"log"
 	"math/rand"
@@ -31,10 +32,10 @@ func connection(isResume bool) {
 	defer c.Close()
 
 	if !isResume {
-		c.WriteJSON(models.NewIdentify())
+		ws_util.WriteJSONLog(c, models.NewIdentify())
 		states.SessionStateReady.Add(1)
 	} else {
-		c.WriteJSON(models.NewResume(sequenceNumber, states.SessionState.SessionID))
+		ws_util.WriteJSONLog(c, models.NewResume(sequenceNumber, states.SessionState.SessionID))
 	}
 
 	heatbeatInterval := make(chan int)
@@ -49,13 +50,18 @@ func connection(isResume bool) {
 			if err != nil {
 				log.Println(err)
 				if strings.HasPrefix(err.Error(), "websocket: close 1001") {
-					c.WriteJSON(models.NewIdentify())
+					ws_util.WriteJSONLog(c, models.NewIdentify())
 					states.SessionStateReady.Add(1)
 				}
 				continue
 			}
-			jsonDat, err := json.Marshal(payload)
-			log.Println("incoming: ", payload, string(jsonDat))
+			if (config.DEVELOPMENT) {
+				jsonDat, _ := json.Marshal(payload)
+				log.Println("incoming: ", payload, string(jsonDat))
+			} else {
+				log.Println("incoming: ", payload)
+			}
+
 			// log.Println("incoming: ", payload)
 			setSequenceNumber(payload.S)
 			switch payload.Op {
@@ -68,7 +74,7 @@ func connection(isResume bool) {
 			case gateway_opcode.Dispatch:
 				go dispatchHandler(c, payload)
 			case gateway_opcode.InvalidSession:
-				c.WriteJSON(models.NewIdentify())
+				ws_util.WriteJSONLog(c, models.NewIdentify())
 				states.SessionStateReady.Add(1)
 			}
 		}
@@ -78,7 +84,7 @@ func connection(isResume bool) {
 	interval := <-heatbeatInterval
 
 	time.Sleep(time.Duration(float64(interval)*rand.Float64()) * time.Millisecond)
-	WriteJSONLog(c, models.NewHeartbeat(nil))
+	ws_util.WriteJSONLog(c, models.NewHeartbeat(nil))
 
 	for {
 		// wait for heartbeat ack
@@ -96,12 +102,9 @@ func connection(isResume bool) {
 		case <-time.After(time.Duration(interval) * time.Millisecond):
 		}
 		sequenceNumberLock.Lock()
-		WriteJSONLog(c, models.NewHeartbeat(sequenceNumber))
+		ws_util.WriteJSONLog(c, models.NewHeartbeat(sequenceNumber))
 		sequenceNumberLock.Unlock()
 	}
 }
 
-func WriteJSONLog(c *websocket.Conn, v interface{}) error {
-	log.Println("outgoing: ", v)
-	return c.WriteJSON(v)
-}
+
