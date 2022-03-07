@@ -6,6 +6,7 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+// please use this function instead of writing to the websocket directly
 func WriteJSONLog(c *websocket.Conn, v interface{}, voice bool) (err error) {
 	if voice {
 		log.Println("outgoing voice: ", v)

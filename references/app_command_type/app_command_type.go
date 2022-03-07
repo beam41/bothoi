@@ -1,7 +1,9 @@
 package app_command_type
 
+type AppCommandType byte
+
 const (
-	ChatInput = iota + 1
+	ChatInput AppCommandType = iota + 1
 	User
 	Message
 )

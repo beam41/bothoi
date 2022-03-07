@@ -8,10 +8,17 @@ import (
 )
 
 type GatewayPayload struct {
-	Op uint8       `json:"op" mapstructure:"op"`
-	S  *uint64     `json:"s,omitempty" mapstructure:"s"`
-	T  string      `json:"t" mapstructure:"t"`
-	D  interface{} `json:"d" mapstructure:"d"`
+	Op gateway_opcode.GatewayOpcode `json:"op" mapstructure:"op"`
+	S  *uint64                      `json:"s,omitempty" mapstructure:"s"`
+	T  string                       `json:"t" mapstructure:"t"`
+	D  interface{}                  `json:"d" mapstructure:"d"`
+}
+
+type VoiceGatewayPayload struct {
+	Op voice_opcode.VoiceOpcode `json:"op" mapstructure:"op"`
+	S  *uint64                  `json:"s,omitempty" mapstructure:"s"`
+	T  string                   `json:"t" mapstructure:"t"`
+	D  interface{}              `json:"d" mapstructure:"d"`
 }
 
 func NewHeartbeat(s *uint64) GatewayPayload {
@@ -60,8 +67,8 @@ func NewVoiceStateUpdate(guildId, voiceId string, mute, deaf bool) GatewayPayloa
 	}
 }
 
-func NewVoiceIdentify(guildId, userId, sessionId, token string) GatewayPayload {
-	return GatewayPayload{
+func NewVoiceIdentify(guildId, userId, sessionId, token string) VoiceGatewayPayload {
+	return VoiceGatewayPayload{
 		Op: voice_opcode.Identify,
 		D: map[string]interface{}{
 			"server_id":  guildId,
@@ -72,16 +79,16 @@ func NewVoiceIdentify(guildId, userId, sessionId, token string) GatewayPayload {
 	}
 }
 
-func NewVoiceHeartbeat(s int64) GatewayPayload {
+func NewVoiceHeartbeat(s int64) VoiceGatewayPayload {
 	x := strconv.FormatInt(s, 10)
-	return GatewayPayload{
+	return VoiceGatewayPayload{
 		Op: voice_opcode.Heartbeat,
 		D:  x,
 	}
 }
 
-func NewVoiceSelectProtocol(address string, port uint16, mode string) GatewayPayload {
-	return GatewayPayload{
+func NewVoiceSelectProtocol(address string, port uint16, mode string) VoiceGatewayPayload {
+	return VoiceGatewayPayload{
 		Op: voice_opcode.SelectProtocol,
 		D: map[string]interface{}{
 			"protocol": "udp",
@@ -94,8 +101,8 @@ func NewVoiceSelectProtocol(address string, port uint16, mode string) GatewayPay
 	}
 }
 
-func NewVoiceSpeaking(ssrc uint32) GatewayPayload {
-	return GatewayPayload{
+func NewVoiceSpeaking(ssrc uint32) VoiceGatewayPayload {
+	return VoiceGatewayPayload{
 		Op: voice_opcode.Speaking,
 		D: map[string]interface{}{
 			"speaking": 1 << 0,

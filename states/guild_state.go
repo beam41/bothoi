@@ -5,13 +5,18 @@ import (
 	"sync"
 )
 
-// map[GuildID]Guild
-var GuildState = map[string]*models.Guild{}
+type guildStateT struct {
+	sync.RWMutex
+	state  map[string]*models.Guild
+}
 
-var GuildStateLock sync.Mutex
+var guildState = &guildStateT{
+	state: map[string]*models.Guild{},
+}
+
 
 func AddGuild(guild *models.Guild) {
-	GuildStateLock.Lock()
-	defer GuildStateLock.Unlock()
-	GuildState[guild.ID] = guild
+	guildState.Lock()
+	guildState.state[guild.ID] = guild
+	guildState.Unlock()
 }

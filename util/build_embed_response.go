@@ -1,8 +1,11 @@
 package util
 
-import "bothoi/models"
+import (
+	"bothoi/models"
+	"bothoi/references/embed_color"
+)
 
-func BuildPlayerResponse(title string, desc string, footerText string, color int32) models.InteractionResponse {
+func BuildPlayerResponse(title string, desc string, footerText string, color embed_color.EmbedColor) models.InteractionResponse {
 	return models.InteractionResponse{
 		Type: 4,
 		Data: models.InteractionResponseData{
@@ -17,7 +20,7 @@ func BuildPlayerResponse(title string, desc string, footerText string, color int
 						Name:    "Bothoi Player",
 						IconUrl: "https://avatars.githubusercontent.com/u/1791353?v=4",
 					},
-					Color: color,
+					Color: int32(color),
 				},
 			},
 		},

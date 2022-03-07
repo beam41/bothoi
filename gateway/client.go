@@ -10,10 +10,16 @@ import (
 	"log"
 	"math/rand"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
 )
+
+var sequenceNumber struct {
+	sync.RWMutex
+	n *uint64
+}
 
 // connect to the discord gateway.
 func Connect() {
@@ -33,9 +39,8 @@ func connection(isResume bool) {
 
 	if !isResume {
 		ws_util.WriteJSONLog(c, models.NewIdentify(), false)
-		states.SessionStateReady.Add(1)
 	} else {
-		ws_util.WriteJSONLog(c, models.NewResume(sequenceNumber, states.SessionState.SessionID), false)
+		ws_util.WriteJSONLog(c, models.NewResume(sequenceNumber.n, states.GetSessionState().SessionID), false)
 	}
 
 	heatbeatInterval := make(chan int)
@@ -51,11 +56,10 @@ func connection(isResume bool) {
 				log.Println(err)
 				if strings.HasPrefix(err.Error(), "websocket: close 1001") {
 					ws_util.WriteJSONLog(c, models.NewIdentify(), false)
-					states.SessionStateReady.Add(1)
 				}
 				continue
 			}
-			if (config.DEVELOPMENT) {
+			if config.DEVELOPMENT {
 				jsonDat, _ := json.Marshal(payload)
 				log.Println("incoming: ", payload, string(jsonDat))
 			} else {
@@ -63,7 +67,11 @@ func connection(isResume bool) {
 			}
 
 			// log.Println("incoming: ", payload)
-			setSequenceNumber(payload.S)
+			if payload.S != nil {
+				sequenceNumber.Lock()
+				sequenceNumber.n = payload.S
+				sequenceNumber.Unlock()
+			}
 			switch payload.Op {
 			case gateway_opcode.Hello:
 				heatbeatInterval <- int(payload.D.(map[string]interface{})["heartbeat_interval"].(float64))
@@ -75,7 +83,6 @@ func connection(isResume bool) {
 				go dispatchHandler(c, payload)
 			case gateway_opcode.InvalidSession:
 				ws_util.WriteJSONLog(c, models.NewIdentify(), false)
-				states.SessionStateReady.Add(1)
 			}
 		}
 	}()
@@ -101,10 +108,8 @@ func connection(isResume bool) {
 		case <-immediateHeartbeat:
 		case <-time.After(time.Duration(interval) * time.Millisecond):
 		}
-		sequenceNumberLock.Lock()
-		ws_util.WriteJSONLog(c, models.NewHeartbeat(sequenceNumber), false)
-		sequenceNumberLock.Unlock()
+		sequenceNumber.RLock()
+		ws_util.WriteJSONLog(c, models.NewHeartbeat(sequenceNumber.n), false)
+		sequenceNumber.RUnlock()
 	}
 }
-
-

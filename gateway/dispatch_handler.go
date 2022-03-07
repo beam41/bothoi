@@ -14,15 +14,14 @@ import (
 func dispatchHandler(c *websocket.Conn, payload models.GatewayPayload) {
 	switch payload.T {
 	case "READY":
-		mapstructure.Decode(payload.D, states.SessionState)
-		states.SessionStateReady.Done()
+		var sessionState models.SessionState
+		mapstructure.Decode(payload.D, &sessionState)
+		states.AddSessionState(&sessionState)
 	case "INTERACTION_CREATE":
-		states.SessionStateReady.Wait()
 		var data models.Interaction
 		mapstructure.Decode(payload.D, &data)
 		app_command.MapInteractionExecute(&data, c)
 	case "GUILD_CREATE":
-		states.SessionStateReady.Wait()
 		var data models.Guild
 		mapstructure.Decode(payload.D, &data)
 		// guild voice state don't contain guild id
@@ -34,24 +33,22 @@ func dispatchHandler(c *websocket.Conn, payload models.GatewayPayload) {
 		}
 		states.AddVoiceStateBulk(voiceStates)
 	case "VOICE_STATE_UPDATE":
-		states.SessionStateReady.Wait()
 		var data *models.VoiceState = new(models.VoiceState)
 		mapstructure.Decode(payload.D, data)
 		if data.UserID != config.BOT_ID {
 			states.AddVoiceState(data)
 		} else {
 			states.SetSessionId(data.GuildID, data.SessionID)
-			if states.SongQueue[data.GuildID].VoiceServer != nil {
-				StartVoiceClient(states.SongQueue[data.GuildID])
+			if states.GetSongQueue(data.GuildID).VoiceServer != nil {
+				StartVoiceClient(states.GetSongQueue(data.GuildID))
 			}
 		}
 	case "VOICE_SERVER_UPDATE":
-		states.SessionStateReady.Wait()
 		var data models.VoiceServer
 		mapstructure.Decode(payload.D, &data)
 		states.SetVoiceServer(data.GuildID, &data)
-		if states.SongQueue[data.GuildID].SessionID != nil {
-			StartVoiceClient(states.SongQueue[data.GuildID])
+		if states.GetSongQueue(data.GuildID).SessionID != nil {
+			StartVoiceClient(states.GetSongQueue(data.GuildID))
 		}
 	case "GUILD_UPDATE":
 		// not important now
@@ -62,7 +59,7 @@ func dispatchHandler(c *websocket.Conn, payload models.GatewayPayload) {
 
 func StartVoiceClient(songQueue *models.SongQueue) {
 	client := &voice.VoiceClient{
-		SongQueue:          songQueue,
+		SongQueue: songQueue,
 	}
 	go client.Connect()
 }

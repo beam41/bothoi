@@ -5,21 +5,31 @@ import (
 	"sync"
 )
 
-// map[UserID]voicestate
-var VoiceState = map[string]*models.VoiceState{}
+type voiceStateT struct {
+	sync.RWMutex
+	state  map[string]*models.VoiceState
+}
 
-var VoiceStateLock sync.Mutex
+var voiceState_ = &voiceStateT{
+	state: map[string]*models.VoiceState{},
+}
 
 func AddVoiceState(voiceState *models.VoiceState) {
-	VoiceStateLock.Lock()
-	defer VoiceStateLock.Unlock()
-	VoiceState[voiceState.UserID] = voiceState
+	voiceState_.Lock()
+	voiceState_.state[voiceState.UserID] = voiceState
+	voiceState_.Unlock()
 }
 
 func AddVoiceStateBulk(voiceStates []models.VoiceState) {
-	VoiceStateLock.Lock()
-	defer VoiceStateLock.Unlock()
+	voiceState_.Lock()
 	for _, voiceState := range voiceStates {
-		VoiceState[voiceState.UserID] = &voiceState
+		voiceState_.state[voiceState.UserID] = &voiceState
 	}
+	voiceState_.Unlock()
+}
+
+func GetVoiceState(userID string) *models.VoiceState {
+	voiceState_.RLock()
+	defer voiceState_.RUnlock()
+	return voiceState_.state[userID]
 }

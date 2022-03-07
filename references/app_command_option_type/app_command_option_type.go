@@ -1,7 +1,9 @@
 package app_command_option_type
 
+type AppCommandOptionType byte
+
 const (
-	SubCommand = iota + 1
+	SubCommand AppCommandOptionType = iota + 1
 	SubCommandGroup
 	String
 	Integer

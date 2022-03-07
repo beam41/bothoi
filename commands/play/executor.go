@@ -17,7 +17,7 @@ import (
 
 func Execute(data *models.Interaction, c *websocket.Conn) {
 	options := util.MapInteractionOption(data.Data.Options)
-	userVoiceState := states.VoiceState[data.Member.User.ID]
+	userVoiceState := states.GetVoiceState(data.Member.User.ID)
 
 	var response models.InteractionResponse
 	// do response to interaction
@@ -41,7 +41,7 @@ func Execute(data *models.Interaction, c *websocket.Conn) {
 		)
 		return
 	}
-	var songQ = states.SongQueue[data.GuildID]
+	var songQ = states.GetSongQueue(data.GuildID)
 	if songQ != nil {
 		if songQ.VoiceChannelID != userVoiceState.ChannelID {
 			response = util.BuildPlayerResponse(
@@ -86,7 +86,7 @@ func Execute(data *models.Interaction, c *websocket.Conn) {
 			return
 		}
 	}
-	log.Println(states.SongQueue[data.GuildID])
+
 	response = util.BuildPlayerResponse(
 		"Play a song",
 		fmt.Sprintf("Playing %s\nrequested by <@%s>", options["song"].Value.(string), data.Member.User.ID),

@@ -27,7 +27,7 @@ func Execute(data *models.Interaction, _ *websocket.Conn) {
 			log.Println(err)
 		}
 	}()
-	var songQ = states.SongQueue[data.GuildID]
+	var songQ = states.GetSongQueue(data.GuildID)
 	if songQ == nil {
 		response = util.BuildPlayerResponse(
 			"No songs in queue",

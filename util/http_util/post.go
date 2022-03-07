@@ -39,7 +39,6 @@ func Post(url string, body *bytes.Buffer, header map[string]string) ([]byte, err
 		return nil, err
 	}
 
-
 	resBody, err := ioutil.ReadAll(res.Body)
 	res.Body.Close()
 

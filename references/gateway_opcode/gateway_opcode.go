@@ -1,8 +1,10 @@
 package gateway_opcode
 
+type GatewayOpcode byte
+
 const (
 	// An event was dispatched.
-	Dispatch = iota
+	Dispatch GatewayOpcode = iota
 	// Fired periodically by the client to keep the connection alive.
 	Heartbeat
 	// Starts a new session during the initial handshake.

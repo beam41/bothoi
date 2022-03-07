@@ -5,6 +5,19 @@ import (
 	"sync"
 )
 
-var SessionState = &models.SessionState{}
+var sessionState struct {
+	sync.RWMutex
+	state *models.SessionState
+}
 
-var SessionStateReady sync.WaitGroup
+func AddSessionState(state *models.SessionState) {
+	sessionState.Lock()
+	sessionState.state = state
+	sessionState.Unlock()
+}
+
+func GetSessionState() *models.SessionState {
+	sessionState.RLock()
+	defer sessionState.RUnlock()
+	return sessionState.state
+}

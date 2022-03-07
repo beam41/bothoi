@@ -1,7 +1,9 @@
 package voice_opcode
 
+type VoiceOpcode byte
+
 const (
-	Identify = iota
+	Identify VoiceOpcode = iota
 	SelectProtocol
 	Ready
 	Heartbeat

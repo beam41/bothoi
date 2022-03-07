@@ -53,7 +53,7 @@ func (client *VoiceClient) Connect() {
 	// receive the gateway response
 	go func() {
 		for {
-			var payload models.GatewayPayload
+			var payload models.VoiceGatewayPayload
 			err := c.ReadJSON(&payload)
 			if err != nil {
 				log.Println(err)
@@ -122,8 +122,8 @@ func (client *VoiceClient) Connect() {
 }
 
 func (client *VoiceClient) StartVoice() {
+	// do IP Discovery
 	client.waitDesc.Add(1)
-
 	raddr, err := net.ResolveUDPAddr("udp", client.UDPInfo.IP+":"+strconv.Itoa(int(client.UDPInfo.Port)))
 	conn, err := net.DialUDP("udp", nil, raddr)
 	ip, port := client.performIpDiscovery(conn)
@@ -165,8 +165,8 @@ func (client *VoiceClient) StartVoice() {
 	fr := encodeSession.Options().FrameRate
 	fd := encodeSession.Options().FrameDuration
 	timeStampWidth := uint32(fr * fd / 1000)
-	ticker := time.NewTicker(time.Millisecond * time.Duration(fd) )
-	ws_util.WriteJSONLog(client.c, models.NewVoiceSpeaking(client.UDPInfo.Ssrc), true)
+	ticker := time.NewTicker(time.Millisecond * time.Duration(fd))
+	ws_util.WriteJSONLog(client.c, models.NewVoiceSpeaking(client.UDPInfo.SSRC), true)
 
 	randNum, err := rand.Int(rand.Reader, big.NewInt(math.MaxInt64))
 	if err != nil {
@@ -184,7 +184,7 @@ func (client *VoiceClient) StartVoice() {
 
 	header[0] = 0x80
 	header[1] = 0x78
-	binary.BigEndian.PutUint32(header[8:], client.UDPInfo.Ssrc)
+	binary.BigEndian.PutUint32(header[8:], client.UDPInfo.SSRC)
 
 	for {
 		binary.BigEndian.PutUint16(header[2:], uint16(sequenceNumber))
@@ -221,10 +221,10 @@ func (client *VoiceClient) StartVoice() {
 	}
 }
 
-func (client *VoiceClient) performIpDiscovery(conn *net.UDPConn) (string, uint16) {
+func (client *VoiceClient) performIpDiscovery(conn *net.UDPConn) (ip string, port uint16) {
 	send := make([]byte, 70)
 
-	binary.BigEndian.PutUint32(send, client.UDPInfo.Ssrc)
+	binary.BigEndian.PutUint32(send, client.UDPInfo.SSRC)
 	_, err := conn.Write(send)
 	if err != nil {
 		log.Panicln(err)
@@ -240,7 +240,6 @@ func (client *VoiceClient) performIpDiscovery(conn *net.UDPConn) (string, uint16
 		log.Panicln("UDP packet too short")
 	}
 
-	var ip string
 	for i := 4; i < 20; i++ {
 		if receive[i] == 0 {
 			break
@@ -249,9 +248,8 @@ func (client *VoiceClient) performIpDiscovery(conn *net.UDPConn) (string, uint16
 	}
 
 	// Grab port from position 68 and 69
-	port := binary.BigEndian.Uint16(receive[68:70])
-	return ip, port
-
+	port = binary.BigEndian.Uint16(receive[68:70])
+	return
 }
 
 func keepAlive(conn *net.UDPConn, i time.Duration) {
