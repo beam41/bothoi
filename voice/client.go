@@ -45,7 +45,7 @@ func (client *VoiceClient) Connect() {
 	client.c = c
 	defer c.Close()
 
-	ws_util.WriteJSONLog(client.c, models.NewVoiceIdentify(client.SongQueue.GuildID, config.BOT_ID, *client.SongQueue.SessionID, client.SongQueue.VoiceServer.Token))
+	ws_util.WriteJSONLog(client.c, models.NewVoiceIdentify(client.SongQueue.GuildID, config.BOT_ID, *client.SongQueue.SessionID, client.SongQueue.VoiceServer.Token), true)
 
 	heatbeatInterval := make(chan int)
 	heatbeatAcked := make(chan int64)
@@ -117,7 +117,7 @@ func (client *VoiceClient) Connect() {
 		}
 		prevNonce = randNum.Int64()
 
-		ws_util.WriteJSONLog(c, models.NewVoiceHeartbeat(prevNonce))
+		ws_util.WriteJSONLog(c, models.NewVoiceHeartbeat(prevNonce), true)
 	}
 }
 
@@ -127,12 +127,12 @@ func (client *VoiceClient) StartVoice() {
 	raddr, err := net.ResolveUDPAddr("udp", client.UDPInfo.IP+":"+strconv.Itoa(int(client.UDPInfo.Port)))
 	conn, err := net.DialUDP("udp", nil, raddr)
 	ip, port := client.performIpDiscovery(conn)
-	ws_util.WriteJSONLog(client.c, models.NewVoiceSelectProtocol(ip, port, config.PREFERRED_MODE))
+	ws_util.WriteJSONLog(client.c, models.NewVoiceSelectProtocol(ip, port, config.PREFERRED_MODE), true)
 
 	client.waitDesc.Wait()
 	go keepAlive(conn, time.Second*5)
 
-	videoID := "nppkHBfM34g"
+	videoID := "w0AOGeqOnFY"
 	ytClient := youtube.Client{}
 
 	video, err := ytClient.GetVideo(videoID)
@@ -151,7 +151,9 @@ func (client *VoiceClient) StartVoice() {
 	options.FrameDuration = 20
 	options.RawOutput = true
 	options.Bitrate = 96
-	options.Application = "lowdelay"
+	options.VBR = false
+	options.CompressionLevel = 0
+	options.Application = "audio"
 
 	encodeSession, err := dca.EncodeFile(sUrl, options)
 	if err != nil {
@@ -163,8 +165,8 @@ func (client *VoiceClient) StartVoice() {
 	fr := encodeSession.Options().FrameRate
 	fd := encodeSession.Options().FrameDuration
 	timeStampWidth := uint32(fr * fd / 1000)
-	ticker := time.NewTicker(time.Millisecond * time.Duration(fd))
-	ws_util.WriteJSONLog(client.c, models.NewVoiceSpeaking(client.UDPInfo.Ssrc))
+	ticker := time.NewTicker(time.Millisecond * time.Duration(fd) )
+	ws_util.WriteJSONLog(client.c, models.NewVoiceSpeaking(client.UDPInfo.Ssrc), true)
 
 	randNum, err := rand.Int(rand.Reader, big.NewInt(math.MaxInt64))
 	if err != nil {
@@ -178,16 +180,17 @@ func (client *VoiceClient) StartVoice() {
 	var timeStamp = uint32(randNum.Uint64())
 
 	header := make([]byte, 12)
+	var nonce [24]byte
+
 	header[0] = 0x80
 	header[1] = 0x78
 	binary.BigEndian.PutUint32(header[8:], client.UDPInfo.Ssrc)
 
 	for {
 		binary.BigEndian.PutUint16(header[2:], uint16(sequenceNumber))
-		binary.BigEndian.PutUint16(header[4:], uint16(timeStamp))
+		binary.BigEndian.PutUint32(header[4:], timeStamp)
 
-		var nonce [24]byte
-		copy(nonce[:], header[0:12])
+		copy(nonce[:], header)
 
 		frame, err := encodeSession.OpusFrame()
 		if err != nil {
@@ -198,8 +201,8 @@ func (client *VoiceClient) StartVoice() {
 		packet := secretbox.Seal(header, frame, &nonce, &client.SessionDescription.SecretKey)
 
 		<-ticker.C
-
 		_, err = conn.Write(packet)
+
 		if err != nil {
 			log.Panicln(err)
 		}
@@ -210,7 +213,7 @@ func (client *VoiceClient) StartVoice() {
 			sequenceNumber++
 		}
 
-		if (timeStamp + timeStampWidth) == 0xFFFFFFFF {
+		if (timeStamp + timeStampWidth) >= 0xFFFFFFFF {
 			timeStamp = 0
 		} else {
 			timeStamp += timeStampWidth

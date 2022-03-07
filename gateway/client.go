@@ -32,10 +32,10 @@ func connection(isResume bool) {
 	defer c.Close()
 
 	if !isResume {
-		ws_util.WriteJSONLog(c, models.NewIdentify())
+		ws_util.WriteJSONLog(c, models.NewIdentify(), false)
 		states.SessionStateReady.Add(1)
 	} else {
-		ws_util.WriteJSONLog(c, models.NewResume(sequenceNumber, states.SessionState.SessionID))
+		ws_util.WriteJSONLog(c, models.NewResume(sequenceNumber, states.SessionState.SessionID), false)
 	}
 
 	heatbeatInterval := make(chan int)
@@ -50,7 +50,7 @@ func connection(isResume bool) {
 			if err != nil {
 				log.Println(err)
 				if strings.HasPrefix(err.Error(), "websocket: close 1001") {
-					ws_util.WriteJSONLog(c, models.NewIdentify())
+					ws_util.WriteJSONLog(c, models.NewIdentify(), false)
 					states.SessionStateReady.Add(1)
 				}
 				continue
@@ -74,7 +74,7 @@ func connection(isResume bool) {
 			case gateway_opcode.Dispatch:
 				go dispatchHandler(c, payload)
 			case gateway_opcode.InvalidSession:
-				ws_util.WriteJSONLog(c, models.NewIdentify())
+				ws_util.WriteJSONLog(c, models.NewIdentify(), false)
 				states.SessionStateReady.Add(1)
 			}
 		}
@@ -84,7 +84,7 @@ func connection(isResume bool) {
 	interval := <-heatbeatInterval
 
 	time.Sleep(time.Duration(float64(interval)*rand.Float64()) * time.Millisecond)
-	ws_util.WriteJSONLog(c, models.NewHeartbeat(nil))
+	ws_util.WriteJSONLog(c, models.NewHeartbeat(nil), false)
 
 	for {
 		// wait for heartbeat ack
@@ -102,7 +102,7 @@ func connection(isResume bool) {
 		case <-time.After(time.Duration(interval) * time.Millisecond):
 		}
 		sequenceNumberLock.Lock()
-		ws_util.WriteJSONLog(c, models.NewHeartbeat(sequenceNumber))
+		ws_util.WriteJSONLog(c, models.NewHeartbeat(sequenceNumber), false)
 		sequenceNumberLock.Unlock()
 	}
 }

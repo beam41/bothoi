@@ -73,7 +73,7 @@ func Execute(data *models.Interaction, c *websocket.Conn) {
 		}
 		states.AddGuildToSongQueue(newSongQ)
 		createVoice := models.NewVoiceStateUpdate(data.GuildID, userVoiceState.ChannelID, false, true)
-		err := ws_util.WriteJSONLog(c, createVoice)
+		err := ws_util.WriteJSONLog(c, createVoice, false)
 		if err != nil {
 			log.Println(err)
 			response = util.BuildPlayerResponse(
