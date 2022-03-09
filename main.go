@@ -1,11 +1,11 @@
 package main
 
 import (
-	"bothoi/app_command"
+	"bothoi/commands"
 	"bothoi/gateway"
 )
 
 func main() {
-	app_command.Register()
+	commands.Register()
 	gateway.Connect()
 }

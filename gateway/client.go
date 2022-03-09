@@ -16,6 +16,8 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+var conn *websocket.Conn
+
 var sequenceNumber struct {
 	sync.RWMutex
 	n *uint64
@@ -32,6 +34,7 @@ func Connect() {
 
 func connection(isResume bool) {
 	c, _, err := websocket.DefaultDialer.Dial(config.GATEWAY_URL, nil)
+	conn = c
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -112,4 +115,16 @@ func connection(isResume bool) {
 		ws_util.WriteJSONLog(c, models.NewHeartbeat(sequenceNumber.n), false)
 		sequenceNumber.RUnlock()
 	}
+}
+
+func JoinVoiceChannel(guildID, channelID string, sessionIdChan chan<- string, voiceServerChan chan<- *models.VoiceServer) error {
+	createVoice := models.NewVoiceStateUpdate(guildID, channelID, false, true)
+	err := ws_util.WriteJSONLog(conn, createVoice, false)
+	if err != nil {
+		return err
+	}
+	voiceChanMapMutex.Lock()
+	defer voiceChanMapMutex.Unlock()
+	voiceChanMap[guildID] = voiceChanMapChan{sessionIdChan, voiceServerChan}
+	return nil
 }

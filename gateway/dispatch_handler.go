@@ -1,15 +1,24 @@
 package gateway
 
 import (
-	"bothoi/app_command"
 	"bothoi/config"
 	"bothoi/models"
 	"bothoi/states"
-	"bothoi/voice"
+	"sync"
 
 	"github.com/gorilla/websocket"
 	"github.com/mitchellh/mapstructure"
 )
+
+var executorList = map[string]func(*models.Interaction){}
+
+func mapInteractionExecute(data *models.Interaction) {
+	executorList[data.Data.Name](data)
+}
+
+func SetExecutorList(list map[string]func(*models.Interaction)) {
+	executorList = list
+}
 
 func dispatchHandler(c *websocket.Conn, payload models.GatewayPayload) {
 	switch payload.T {
@@ -20,7 +29,7 @@ func dispatchHandler(c *websocket.Conn, payload models.GatewayPayload) {
 	case "INTERACTION_CREATE":
 		var data models.Interaction
 		mapstructure.Decode(payload.D, &data)
-		app_command.MapInteractionExecute(&data, c)
+		mapInteractionExecute(&data)
 	case "GUILD_CREATE":
 		var data models.Guild
 		mapstructure.Decode(payload.D, &data)
@@ -38,18 +47,12 @@ func dispatchHandler(c *websocket.Conn, payload models.GatewayPayload) {
 		if data.UserID != config.BOT_ID {
 			states.AddVoiceState(data)
 		} else {
-			states.SetSessionId(data.GuildID, data.SessionID)
-			if states.GetSongQueue(data.GuildID).VoiceServer != nil {
-				StartVoiceClient(states.GetSongQueue(data.GuildID))
-			}
+			returnSessionId(data.GuildID, data.SessionID)
 		}
 	case "VOICE_SERVER_UPDATE":
 		var data models.VoiceServer
 		mapstructure.Decode(payload.D, &data)
-		states.SetVoiceServer(data.GuildID, &data)
-		if states.GetSongQueue(data.GuildID).SessionID != nil {
-			StartVoiceClient(states.GetSongQueue(data.GuildID))
-		}
+		returnVoiceServer(data.GuildID, &data)
 	case "GUILD_UPDATE":
 		// not important now
 	case "GUILD_DELETE":
@@ -57,9 +60,26 @@ func dispatchHandler(c *websocket.Conn, payload models.GatewayPayload) {
 	}
 }
 
-func StartVoiceClient(songQueue *models.SongQueue) {
-	client := &voice.VoiceClient{
-		SongQueue: songQueue,
+type voiceChanMapChan struct {
+	sessionIdChan   chan<- string
+	voiceServerChan chan<- *models.VoiceServer
+}
+
+var voiceChanMap map[string]voiceChanMapChan = map[string]voiceChanMapChan{}
+var voiceChanMapMutex sync.RWMutex
+
+func returnSessionId(guildID, sessionID string) {
+	voiceChanMapMutex.RLock()
+	defer voiceChanMapMutex.RUnlock()
+	if chanMap, ok := voiceChanMap[guildID]; ok {
+		chanMap.sessionIdChan <- sessionID
 	}
-	go client.Connect()
+}
+
+func returnVoiceServer(guildID string, voiceServer *models.VoiceServer) {
+	voiceChanMapMutex.RLock()
+	defer voiceChanMapMutex.RUnlock()
+	if chanMap, ok := voiceChanMap[guildID]; ok {
+		chanMap.voiceServerChan <- voiceServer
+	}
 }

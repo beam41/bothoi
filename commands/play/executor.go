@@ -7,15 +7,13 @@ import (
 	"bothoi/states"
 	"bothoi/util"
 	"bothoi/util/http_util"
-	"bothoi/util/ws_util"
+	"bothoi/voice"
 	"fmt"
 	"log"
 	"strings"
-
-	"github.com/gorilla/websocket"
 )
 
-func Execute(data *models.Interaction, c *websocket.Conn) {
+func Execute(data *models.Interaction) {
 	options := util.MapInteractionOption(data.Data.Options)
 	userVoiceState := states.GetVoiceState(data.Member.User.ID)
 
@@ -41,9 +39,9 @@ func Execute(data *models.Interaction, c *websocket.Conn) {
 		)
 		return
 	}
-	var songQ = states.GetSongQueue(data.GuildID)
-	if songQ != nil {
-		if songQ.VoiceChannelID != userVoiceState.ChannelID {
+	err := voice.StartClient(data.GuildID, userVoiceState.ChannelID)
+	if err != nil {
+		if err.Error() == "Already in a different voice channel" {
 			response = util.BuildPlayerResponse(
 				"Can't play a song :(",
 				fmt.Sprintf("<@%s> not in the same voice channel as bot", data.Member.User.Username),
@@ -51,30 +49,7 @@ func Execute(data *models.Interaction, c *websocket.Conn) {
 				embed_color.Error,
 			)
 			return
-		}
-		states.AppendSongToSongQueue(data.GuildID, models.SongItem{
-			YtID:        options["song"].Value.(string),
-			Title:       options["song"].Value.(string),
-			Duration:    0,
-			RequesterID: data.Member.User.ID,
-		})
-	} else {
-		newSongQ := &models.SongQueue{
-			Songs: []models.SongItem{
-				{
-					YtID:        options["song"].Value.(string),
-					Title:       options["song"].Value.(string),
-					Duration:    0,
-					RequesterID: data.Member.User.ID,
-				},
-			},
-			VoiceChannelID: userVoiceState.ChannelID,
-			GuildID:        data.GuildID,
-		}
-		states.AddGuildToSongQueue(newSongQ)
-		createVoice := models.NewVoiceStateUpdate(data.GuildID, userVoiceState.ChannelID, false, true)
-		err := ws_util.WriteJSONLog(c, createVoice, false)
-		if err != nil {
+		} else {
 			log.Println(err)
 			response = util.BuildPlayerResponse(
 				"Can't play a song :(",
@@ -82,15 +57,29 @@ func Execute(data *models.Interaction, c *websocket.Conn) {
 				"Error",
 				embed_color.Error,
 			)
-			states.RemoveGuildFromSongQueue(data.GuildID)
+			voice.StopClient(data.GuildID)
 			return
 		}
 	}
-
-	response = util.BuildPlayerResponse(
-		"Play a song",
-		fmt.Sprintf("Playing %s\nrequested by <@%s>", options["song"].Value.(string), data.Member.User.ID),
-		"Playing",
-		embed_color.Playing,
-	)
+	queueSize := voice.AppendSongToSongQueue(data.GuildID, models.SongItem{
+		YtID:        options["song"].Value.(string),
+		Title:       options["song"].Value.(string),
+		Duration:    0,
+		RequesterID: data.Member.User.ID,
+	})
+	if queueSize == 1 {
+		response = util.BuildPlayerResponse(
+			"Play a song",
+			fmt.Sprintf("Playing %s\nrequested by <@%s>", options["song"].Value.(string), data.Member.User.ID),
+			"Playing",
+			embed_color.Playing,
+		)
+	} else {
+		response = util.BuildPlayerResponse(
+			"Play a song",
+			fmt.Sprintf("Added %s\nrequested by <@%s> to queue", options["song"].Value.(string), data.Member.User.ID),
+			fmt.Sprintf("#%d in queue", queueSize),
+			embed_color.Playing,
+		)
+	}
 }
