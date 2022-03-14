@@ -96,14 +96,14 @@ func Execute(data *models.Interaction) {
 	if queueSize == 1 {
 		response = util.BuildPlayerResponseData(
 			"Play a song",
-			fmt.Sprintf("Playing %s\nrequested by <@%s>", options["song"].Value.(string), data.Member.User.ID),
+			fmt.Sprintf("Playing %s\nrequested by <@%s>", song.Title, data.Member.User.ID),
 			"Playing",
 			embed_color.Playing,
 		)
 	} else {
 		response = util.BuildPlayerResponseData(
 			"Play a song",
-			fmt.Sprintf("Added %s\nrequested by <@%s> to queue", options["song"].Value.(string), data.Member.User.ID),
+			fmt.Sprintf("Added %s\nrequested by <@%s> to queue", song.Title, data.Member.User.ID),
 			fmt.Sprintf("#%d in queue", queueSize),
 			embed_color.Playing,
 		)

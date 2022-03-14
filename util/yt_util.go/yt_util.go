@@ -2,14 +2,16 @@ package yt_util
 
 import (
 	"bothoi/models"
-	"bytes"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os/exec"
 	"regexp"
+	"strconv"
 	"strings"
+	"sync"
 )
 
 func DownloadYt(ytID string) ([]byte, error) {
@@ -21,16 +23,49 @@ func DownloadYt(ytID string) ([]byte, error) {
 	}
 	urlStr := strings.TrimSpace(string(stdout))
 
-	// i think i need to download to a temp file because this one is somehow super slow
-	resp, err := http.Get(urlStr)
-	if err != nil {
+	// check content length
+	headRes, err := http.Head(urlStr)
+	if err != nil || headRes.StatusCode != http.StatusOK {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	contentLengthStr := headRes.Header.Get("Content-Length")
+	contentLength, _ := strconv.ParseInt(contentLengthStr, 10, 64)
+	if contentLength == 0 {
+		return nil, errors.New("Content-Length is 0")
+	}
 
-	buf := new(bytes.Buffer)
-	buf.ReadFrom(resp.Body)
-	return buf.Bytes(), nil
+	bytesArr := make([]byte, contentLength)
+
+	const chunkSize = 100000
+	var wg sync.WaitGroup
+
+	// concurrently download chunks
+	for pos := int64(0); pos < contentLength; pos += chunkSize {
+		wg.Add(1)
+		go func(p int64) {
+			defer wg.Done()
+
+			req, err := http.NewRequest("GET", urlStr, nil)
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+
+			req.Header.Set("Range", fmt.Sprintf("bytes=%v-%v", p, p+chunkSize-1))
+			resp, err := http.DefaultClient.Do(req)
+			if err != nil {
+				fmt.Println(err)
+			}
+			defer resp.Body.Close()
+			body, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				fmt.Println(err)
+			}
+			copy(bytesArr[p:], body)
+		}(pos)
+	}
+	wg.Wait()
+	return bytesArr, nil
 }
 
 func isYtVidUrl(testUrl string) bool {
