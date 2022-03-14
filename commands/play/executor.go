@@ -7,6 +7,7 @@ import (
 	"bothoi/states"
 	"bothoi/util"
 	"bothoi/util/http_util"
+	"bothoi/util/yt_util.go"
 	"bothoi/voice"
 	"fmt"
 	"log"
@@ -17,21 +18,36 @@ func Execute(data *models.Interaction) {
 	options := util.MapInteractionOption(data.Data.Options)
 	userVoiceState := states.GetVoiceState(data.Member.User.ID)
 
-	var response models.InteractionResponse
+	// post waiting prevent response timeout
+	url := config.INTERACTION_RESPONSE_ENDPOINT
+	url = strings.Replace(url, "<interaction_id>", data.ID, 1)
+	url = strings.Replace(url, "<interaction_token>", data.Token, 1)
+
+	_, err := http_util.PostJson(url, util.BuildPlayerResponse(
+		"Play a song",
+		"Loading...",
+		"please wait",
+		embed_color.Playing,
+	))
+	if err != nil {
+		log.Println(err)
+	}
+
+	var response models.InteractionResponseData
 	// do response to interaction
 	defer func() {
-		url := config.INTERACTION_RESPONSE_ENDPOINT
-		url = strings.Replace(url, "<interaction_id>", data.ID, 1)
+		url := config.INTERACTION_RESPONSE_EDIT_ENDPOINT
+		url = strings.Replace(url, "<application_id>", config.BOT_ID, 1)
 		url = strings.Replace(url, "<interaction_token>", data.Token, 1)
 
-		_, err := http_util.PostJson(url, response)
+		_, err := http_util.PatchJson(url, response)
 		if err != nil {
 			log.Println(err)
 		}
 	}()
 
 	if userVoiceState == nil || userVoiceState.GuildID != data.GuildID || userVoiceState.ChannelID == "" {
-		response = util.BuildPlayerResponse(
+		response = util.BuildPlayerResponseData(
 			"Can't play a song :(",
 			fmt.Sprintf("<@%s> not in voice channel", data.Member.User.Username),
 			"Error",
@@ -39,10 +55,24 @@ func Execute(data *models.Interaction) {
 		)
 		return
 	}
-	err := voice.StartClient(data.GuildID, userVoiceState.ChannelID)
+
+	song, err := yt_util.SearchYt(options["song"].Value.(string))
+	if err != nil {
+		log.Println(err)
+		response = util.BuildPlayerResponseData(
+			"Can't play a song :(",
+			"Song not found",
+			"Error",
+			embed_color.Error,
+		)
+		return
+	}
+	song.RequesterID = data.Member.User.ID
+
+	err = voice.StartClient(data.GuildID, userVoiceState.ChannelID)
 	if err != nil {
 		if err.Error() == "Already in a different voice channel" {
-			response = util.BuildPlayerResponse(
+			response = util.BuildPlayerResponseData(
 				"Can't play a song :(",
 				fmt.Sprintf("<@%s> not in the same voice channel as bot", data.Member.User.Username),
 				"Error",
@@ -51,7 +81,7 @@ func Execute(data *models.Interaction) {
 			return
 		} else {
 			log.Println(err)
-			response = util.BuildPlayerResponse(
+			response = util.BuildPlayerResponseData(
 				"Can't play a song :(",
 				"Unknown Error",
 				"Error",
@@ -61,21 +91,17 @@ func Execute(data *models.Interaction) {
 			return
 		}
 	}
-	queueSize := voice.AppendSongToSongQueue(data.GuildID, models.SongItem{
-		YtID:        options["song"].Value.(string),
-		Title:       options["song"].Value.(string),
-		Duration:    0,
-		RequesterID: data.Member.User.ID,
-	})
+	log.Println("Starting client", song)
+	queueSize := voice.AppendSongToSongQueue(data.GuildID, song)
 	if queueSize == 1 {
-		response = util.BuildPlayerResponse(
+		response = util.BuildPlayerResponseData(
 			"Play a song",
 			fmt.Sprintf("Playing %s\nrequested by <@%s>", options["song"].Value.(string), data.Member.User.ID),
 			"Playing",
 			embed_color.Playing,
 		)
 	} else {
-		response = util.BuildPlayerResponse(
+		response = util.BuildPlayerResponseData(
 			"Play a song",
 			fmt.Sprintf("Added %s\nrequested by <@%s> to queue", options["song"].Value.(string), data.Member.User.ID),
 			fmt.Sprintf("#%d in queue", queueSize),

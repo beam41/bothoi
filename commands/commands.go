@@ -4,6 +4,7 @@ import (
 	"bothoi/commands/pause"
 	"bothoi/commands/play"
 	"bothoi/commands/queue"
+	"bothoi/commands/stop"
 	"bothoi/config"
 	"bothoi/gateway"
 	"bothoi/models"
@@ -16,6 +17,7 @@ var commandList = []models.AppCommand{
 	queue.Command,
 	pause.Command[0],
 	pause.Command[1],
+	stop.Command,
 }
 
 var executorList = map[string]func(*models.Interaction){
@@ -23,6 +25,7 @@ var executorList = map[string]func(*models.Interaction){
 	queue.Command.Name:    queue.Execute,
 	pause.Command[0].Name: pause.Execute,
 	pause.Command[1].Name: pause.Execute,
+	stop.Command.Name:     stop.Execute,
 }
 
 func Register() {

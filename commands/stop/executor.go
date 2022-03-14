@@ -1,9 +1,10 @@
-package queue
+package stop
 
 import (
 	"bothoi/config"
 	"bothoi/models"
 	"bothoi/references/embed_color"
+	"bothoi/states"
 	"bothoi/util"
 	"bothoi/util/http_util"
 	"bothoi/voice"
@@ -25,32 +26,31 @@ func Execute(data *models.Interaction) {
 			log.Println(err)
 		}
 	}()
-	var playing, songQ = voice.GetSongQueue(data.GuildID, 0, 10)
-	if songQ == nil || len(songQ) == 0 {
+	userVoiceState := states.GetVoiceState(data.Member.User.ID)
+	clientVoiceChannel := voice.GetVoiceChannelID(data.GuildID)
+	if userVoiceState == nil || userVoiceState.ChannelID != clientVoiceChannel {
 		response = util.BuildPlayerResponse(
-			"No songs in queue",
-			"Start playing a song now!",
-			"Queue",
+			"Cannot stop",
+			fmt.Sprintf("<@%s> not in same voice channel as Bothoi", data.Member.User.Username),
+			"Error",
 			embed_color.Error,
 		)
 		return
 	}
-
-	res := "Song in queue (Requested by)\n"
-
-	if playing {
-		res += fmt.Sprintf("**Currently Playing**\n%s (<@%s>)\n", songQ[0].Title, songQ[0].RequesterID)
-		songQ = songQ[1:]
+	err := voice.StopClient(data.GuildID)
+	if err != nil {
+		response = util.BuildPlayerResponse(
+			"Stopped",
+			"Cannot be stopped",
+			"error",
+			embed_color.Error,
+		)
+		return
 	}
-
-	for i, song := range songQ {
-		res += fmt.Sprintf("%d. %s (<@%s>)\n", i+1, song.Title, song.RequesterID)
-	}
-
 	response = util.BuildPlayerResponse(
-		"Queue",
-		res,
-		fmt.Sprintf("%d %s in queue", len(songQ), util.Ternary(len(songQ) == 1, "song", "songs")),
+		"Stopped",
+		"Stopped by the request of <@"+data.Member.User.ID+">",
+		"goodbye",
 		embed_color.Default,
 	)
 }

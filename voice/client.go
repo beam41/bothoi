@@ -39,13 +39,15 @@ type VoiceClient struct {
 	sessionDescription *models.SessionDescription
 	udpInfo            *models.UDPInfo
 	running            bool
-	playing            bool
+	playerRunning      bool
 	udpReady           bool
 	udpReadyWait       *sync.Cond
 	speaking           bool
 	frameData          chan []byte
 	pausing            bool
 	pauseWait          *sync.Cond
+	playing            bool
+	destroyed          bool
 }
 
 // start the client if not started already
@@ -85,6 +87,16 @@ func StartClient(guildID, channelID string) error {
 	return nil
 }
 
+// remove client from list and properly
+func StopClient(guildID string) error {
+	 err := removeClient(guildID)
+	if err != nil {
+		return err
+	}
+	gateway.LeaveVoiceChannel(guildID)
+	return nil
+}
+
 func (client *VoiceClient) connect() {
 	// only connect once
 	client.Lock()
@@ -113,7 +125,11 @@ func (client *VoiceClient) connect() {
 			var payload models.VoiceGatewayPayload
 			err := c.ReadJSON(&payload)
 			if err != nil {
-				log.Println(err)
+				client.RLock()
+				if !client.destroyed {
+					log.Println(err)
+				}
+				client.RUnlock()
 				return
 			}
 			if config.DEVELOPMENT {
@@ -179,6 +195,7 @@ func (client *VoiceClient) connect() {
 			c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(4009, ""))
 			return
 		case <-client.ctx.Done():
+			c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(1000, ""))
 			return
 		}
 	}

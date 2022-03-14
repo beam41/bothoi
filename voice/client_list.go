@@ -58,40 +58,44 @@ func AppendSongToSongQueue(guildID string, songItem models.SongItem) int {
 }
 
 // stop playing and remove the client from the list
-func StopClient(guildID string) {
+func removeClient(guildID string) error {
 	clientList.Lock()
 	defer clientList.Unlock()
 	var client = clientList.c[guildID]
 	if client == nil {
-		return
+		return errors.New("Client not found")
 	}
-	close(client.frameData)
+	client.Lock()
+	defer client.Unlock()
+	client.destroyed = true
 	client.udpReadyWait.Broadcast()
 	client.pauseWait.Broadcast()
 	client.ctxCancel()
 	delete(clientList.c, guildID)
+	close(client.frameData)
+	return nil
 }
 
 // get the copy of current song queue
-func GetSongQueue(guildID string, start, end int) []models.SongItem {
+func GetSongQueue(guildID string, start, end int) (playing bool, queue []models.SongItem) {
 	clientList.RLock()
 	defer clientList.RUnlock()
 	var client = clientList.c[guildID]
 	if client == nil {
-		return nil
+		return false, nil
 	}
 	client.RLock()
 	defer client.RUnlock()
-	tmp := make([]models.SongItem, end-start)
+	queue = make([]models.SongItem, end-start)
 	for i, item := range client.songQueue[start:end] {
-		tmp[i] = models.SongItem{
+		queue[i] = models.SongItem{
 			YtID:        item.YtID,
 			Title:       item.Title,
 			Duration:    item.Duration,
 			RequesterID: item.RequesterID,
 		}
 	}
-	return tmp
+	return client.playing && !client.pausing, queue
 }
 
 func ClientExist(guildID string) bool {
@@ -101,21 +105,23 @@ func ClientExist(guildID string) bool {
 	return client != nil
 }
 
-// pause/resume the music player
-func PauseClient(guildID string) error {
+// pause/resume the music player return true if the player is paused
+func PauseClient(guildID string) (bool, error) {
 	clientList.Lock()
 	defer clientList.Unlock()
 	var client = clientList.c[guildID]
 	if client == nil {
-		return errors.New("Client not found")
+		return false, errors.New("Client not found")
 	}
+	client.RLock()
+	defer client.RUnlock()
 	client.pauseWait.L.Lock()
 	client.pausing = !client.pausing
 	if !client.pausing {
 		client.pauseWait.Broadcast()
 	}
 	client.pauseWait.L.Unlock()
-	return nil
+	return client.pausing, nil
 }
 
 func GetVoiceChannelID(guildID string) string {

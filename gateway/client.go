@@ -118,7 +118,7 @@ func connection(isResume bool) {
 }
 
 func JoinVoiceChannel(guildID, channelID string, sessionIdChan chan<- string, voiceServerChan chan<- *models.VoiceServer) error {
-	createVoice := models.NewVoiceStateUpdate(guildID, channelID, false, true)
+	createVoice := models.NewVoiceStateUpdate(guildID, &channelID, false, true)
 	err := ws_util.WriteJSONLog(conn, createVoice, false)
 	if err != nil {
 		return err
@@ -126,5 +126,17 @@ func JoinVoiceChannel(guildID, channelID string, sessionIdChan chan<- string, vo
 	voiceChanMapMutex.Lock()
 	defer voiceChanMapMutex.Unlock()
 	voiceChanMap[guildID] = voiceChanMapChan{sessionIdChan, voiceServerChan}
+	return nil
+}
+
+func LeaveVoiceChannel(guildID string) error {
+	leaveVoice := models.NewVoiceStateUpdate(guildID, nil, false, false)
+	err := ws_util.WriteJSONLog(conn, leaveVoice, false)
+	if err != nil {
+		return err
+	}
+	voiceChanMapMutex.Lock()
+	defer voiceChanMapMutex.Unlock()
+	delete(voiceChanMap, guildID)
 	return nil
 }

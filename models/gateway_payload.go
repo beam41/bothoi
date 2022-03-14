@@ -55,7 +55,7 @@ func NewResume(s *uint64, sessionId string) GatewayPayload {
 	}
 }
 
-func NewVoiceStateUpdate(guildId, voiceId string, mute, deaf bool) GatewayPayload {
+func NewVoiceStateUpdate(guildId string, voiceId *string, mute, deaf bool) GatewayPayload {
 	return GatewayPayload{
 		Op: gateway_opcode.VoiceStateUpdate,
 		D: map[string]interface{}{

@@ -3,19 +3,20 @@ package models
 import "sync"
 
 type SongItem struct {
-	YtID         string
-	Title        string
-	Duration     int64
-	RequesterID  string
+	YtID        string
+	Title       string
+	Duration    string
+	RequesterID string
 }
 
 type SongItemWData struct {
 	YtID         string
 	Title        string
-	Duration     int64
+	Duration     string
 	RequesterID  string
 	SongData     []byte
 	DownloadLock sync.Mutex
+	Downloading  bool
 }
 
 type VoiceServer struct {

@@ -30,27 +30,37 @@ func Execute(data *models.Interaction) {
 	clientVoiceChannel := voice.GetVoiceChannelID(data.GuildID)
 	if userVoiceState == nil || userVoiceState.ChannelID != clientVoiceChannel {
 		response = util.BuildPlayerResponse(
-			"Can't play a song :(",
+			"Pause error",
 			fmt.Sprintf("<@%s> not in same voice channel as Bothoi", data.Member.User.Username),
-			"Error",
-			embed_color.Error,
-		)
-		return
-	}
-	err := voice.PauseClient(data.GuildID)
-	if err != nil {
-		response = util.BuildPlayerResponse(
-			"Paused",
-			"Cannot be paused",
 			"error",
 			embed_color.Error,
 		)
 		return
 	}
-	response = util.BuildPlayerResponse(
-		"Paused",
-		"Paused by the request of <@"+data.Member.User.ID+">",
-		"/resume to resume",
-		embed_color.Default,
-	)
+	pausing, err := voice.PauseClient(data.GuildID)
+	if err != nil {
+		response = util.BuildPlayerResponse(
+			"Pause error",
+			"Cannot be paused/resumed",
+			"error",
+			embed_color.Error,
+		)
+		return
+	}
+	if pausing {
+		response = util.BuildPlayerResponse(
+			"Paused",
+			"Paused by the request of <@"+data.Member.User.ID+">",
+			"/resume to resume",
+			embed_color.Default,
+		)
+	} else {
+		response = util.BuildPlayerResponse(
+			"Resumed",
+			"Resumed by the request of <@"+data.Member.User.ID+">",
+			"",
+			embed_color.Default,
+		)
+	}
+
 }

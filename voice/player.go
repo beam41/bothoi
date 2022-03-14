@@ -3,7 +3,7 @@ package voice
 import (
 	"bothoi/config"
 	"bothoi/models"
-	"bothoi/util"
+	"bothoi/util/yt_util.go"
 	"bytes"
 	"io"
 	"log"
@@ -15,11 +15,11 @@ import (
 func (client *VoiceClient) play() {
 	// ensure only one player is running at a time
 	client.Lock()
-	if client.playing {
+	if client.playerRunning {
 		client.Unlock()
 		return
 	}
-	client.playing = true
+	client.playerRunning = true
 	client.Unlock()
 
 	// encode settings
@@ -35,7 +35,7 @@ func (client *VoiceClient) play() {
 		currentSong := client.songQueue[0]
 		currentSong.DownloadLock.Lock()
 		if currentSong.SongData == nil {
-			sd, err := util.DownloadYt(currentSong.YtID)
+			sd, err := yt_util.DownloadYt(currentSong.YtID)
 			currentSong.SongData = sd
 			if err != nil {
 				currentSong.DownloadLock.Unlock()
@@ -49,7 +49,7 @@ func (client *VoiceClient) play() {
 				} else {
 					// stop player
 					client.songQueue = []*models.SongItemWData{}
-					client.playing = false
+					client.playerRunning = false
 					client.Unlock()
 					go client.waitForExit()
 					return
@@ -59,11 +59,19 @@ func (client *VoiceClient) play() {
 		}
 		currentSong.DownloadLock.Unlock()
 
+		client.Lock()
+		client.playing = true
+		client.Unlock()
+
 		reader := bytes.NewReader(currentSong.SongData)
-		log.Println(len(currentSong.SongData))
 		client.encodeSong(reader, options)
 
 		client.Lock()
+		if client.destroyed {
+			client.Unlock()
+			return
+		}
+		client.playing = false
 		if len(client.songQueue) > 1 {
 			client.songQueue = client.songQueue[1:]
 			client.Unlock()
@@ -71,7 +79,7 @@ func (client *VoiceClient) play() {
 		} else {
 			// stop player
 			client.songQueue = []*models.SongItemWData{}
-			client.playing = false
+			client.playerRunning = false
 			client.Unlock()
 			go client.waitForExit()
 			return
@@ -97,7 +105,15 @@ func (client *VoiceClient) encodeSong(reader io.Reader, options *dca.EncodeOptio
 				return
 			}
 		}
+
+		client.RLock()
+		if client.destroyed {
+			client.RUnlock()
+			return
+		}
+		// if we unlock before send, it might send a frame after the client has been destroyed
 		client.frameData <- frame
+		client.RUnlock()
 
 		client.pauseWait.L.Lock()
 		for client.pausing {
@@ -112,10 +128,16 @@ func (client *VoiceClient) downloadUpcoming() {
 	defer client.Unlock()
 	if len(client.songQueue) >= 2 {
 		song1 := client.songQueue[1]
+		if song1.Downloading {
+			// prevent multiple goroutine waiting on lock while download
+			return
+		}
+		song1.Downloading = true
+
 		go func() {
 			song1.DownloadLock.Lock()
 			if song1.SongData == nil {
-				sd, _ := util.DownloadYt(song1.YtID)
+				sd, _ := yt_util.DownloadYt(song1.YtID)
 				song1.SongData = sd
 			}
 			song1.DownloadLock.Unlock()
