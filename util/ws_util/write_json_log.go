@@ -7,7 +7,7 @@ import (
 )
 
 // please use this function instead of writing to the websocket directly
-func WriteJSONLog(c *websocket.Conn, v interface{}, voice bool) (err error) {
+func WriteJSONLog(c *websocket.Conn, v any, voice bool) (err error) {
 	if voice {
 		log.Println("outgoing voice: ", v)
 	} else {

@@ -89,7 +89,7 @@ func StartClient(guildID, channelID string) error {
 
 // remove client from list and properly
 func StopClient(guildID string) error {
-	 err := removeClient(guildID)
+	err := removeClient(guildID)
 	if err != nil {
 		return err
 	}
@@ -140,7 +140,7 @@ func (client *VoiceClient) connect() {
 			}
 			switch payload.Op {
 			case voice_opcode.Hello:
-				heatbeatInterval <- int(payload.D.(map[string]interface{})["heartbeat_interval"].(float64))
+				heatbeatInterval <- int(payload.D.(map[string]any)["heartbeat_interval"].(float64))
 			case voice_opcode.HeartbeatAck:
 				n, _ := strconv.ParseInt(payload.D.(string), 10, 64)
 				heatbeatAcked <- n

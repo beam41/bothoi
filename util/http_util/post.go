@@ -3,18 +3,18 @@ package http_util
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 )
 
 // post json
-func PostJson(url string, body interface{}) ([]byte, error) {
+func PostJson(url string, body any) ([]byte, error) {
 	header := map[string]string{}
 	return PostJsonH(url, body, header)
 }
 
 // post json with header
-func PostJsonH(url string, body interface{}, header map[string]string) ([]byte, error) {
+func PostJsonH(url string, body any, header map[string]string) ([]byte, error) {
 	payload := new(bytes.Buffer)
 	err := json.NewEncoder(payload).Encode(body)
 	if err != nil {
@@ -39,7 +39,7 @@ func Post(url string, body *bytes.Buffer, header map[string]string) ([]byte, err
 		return nil, err
 	}
 
-	resBody, err := ioutil.ReadAll(res.Body)
+	resBody, err := io.ReadAll(res.Body)
 	res.Body.Close()
 
 	if err != nil {

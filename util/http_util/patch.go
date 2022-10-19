@@ -3,17 +3,17 @@ package http_util
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 )
 
-func PatchJson(url string, body interface{}) ([]byte, error) {
+func PatchJson(url string, body any) ([]byte, error) {
 	header := map[string]string{}
 	return PatchJsonH(url, body, header)
 }
 
-func PatchJsonH(url string, body interface{}, header map[string]string) ([]byte, error) {
+func PatchJsonH(url string, body any, header map[string]string) ([]byte, error) {
 	payload := new(bytes.Buffer)
 	err := json.NewEncoder(payload).Encode(body)
 	if err != nil {
@@ -38,7 +38,7 @@ func Patch(url string, body *bytes.Buffer, header map[string]string) ([]byte, er
 		return nil, err
 	}
 	log.Println("StatusCode", res.StatusCode)
-	resBody, err := ioutil.ReadAll(res.Body)
+	resBody, err := io.ReadAll(res.Body)
 	res.Body.Close()
 
 	if err != nil {

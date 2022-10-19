@@ -22,7 +22,7 @@ type InteractionData struct {
 }
 
 type InteractionOption struct {
-	Name  string      `json:"name" mapstructure:"name"`
-	Type  int64       `json:"type" mapstructure:"type"`
-	Value interface{} `json:"value" mapstructure:"value"`
+	Name  string `json:"name" mapstructure:"name"`
+	Type  int64  `json:"type" mapstructure:"type"`
+	Value any    `json:"value" mapstructure:"value"`
 }

@@ -77,7 +77,7 @@ func connection(isResume bool) {
 			}
 			switch payload.Op {
 			case gateway_opcode.Hello:
-				heatbeatInterval <- int(payload.D.(map[string]interface{})["heartbeat_interval"].(float64))
+				heatbeatInterval <- int(payload.D.(map[string]any)["heartbeat_interval"].(float64))
 			case gateway_opcode.HeartbeatAck:
 				heatbeatAcked <- true
 			case gateway_opcode.Heartbeat:
