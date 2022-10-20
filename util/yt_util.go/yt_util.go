@@ -71,7 +71,7 @@ func DownloadYt(ytID string) ([]byte, error) {
 
 func isYtVidUrl(testUrl string) bool {
 	u, err := url.Parse(testUrl)
-	if err == nil && u.Scheme != "" && u.Host != "" {
+	if err != nil {
 		return false
 	}
 
