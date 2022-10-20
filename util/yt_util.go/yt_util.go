@@ -2,6 +2,7 @@ package yt_util
 
 import (
 	"bothoi/models"
+	"bytes"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -101,11 +102,13 @@ func SearchYt(searchStr string) (models.SongItem, error) {
 	} else {
 		cmd = exec.Command("youtube-dl", "--get-title", "--get-id", "--get-duration", "-f", "bestaudio", searchStr)
 	}
-	stdout, err := cmd.Output()
+	var stdout bytes.Buffer
+	cmd.Stdout = &stdout
+	err := cmd.Run()
 	if err != nil {
 		return models.SongItem{}, err
 	}
-	output := strings.TrimSpace(string(stdout))
+	output := strings.TrimSpace(stdout.String())
 	if output == "" {
 		return models.SongItem{}, errors.New("No results found")
 	}

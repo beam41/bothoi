@@ -48,6 +48,7 @@ type VoiceClient struct {
 	pauseWait          *sync.Cond
 	playing            bool
 	destroyed          bool
+	skip               bool
 }
 
 // start the client if not started already
@@ -87,7 +88,7 @@ func StartClient(guildID, channelID string) error {
 	return nil
 }
 
-// remove client from list and properly
+// remove client from list and properly leave
 func StopClient(guildID string) error {
 	err := removeClient(guildID)
 	if err != nil {

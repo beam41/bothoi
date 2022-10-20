@@ -84,8 +84,11 @@ func connection(isResume bool) {
 				immediateHeartbeat <- true
 			case gateway_opcode.Dispatch:
 				go dispatchHandler(c, payload)
+			case gateway_opcode.Reconnect:
+				fallthrough
 			case gateway_opcode.InvalidSession:
-				ws_util.WriteJSONLog(c, models.NewIdentify(), false)
+				c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseServiceRestart, ""))
+				return
 			}
 		}
 	}()

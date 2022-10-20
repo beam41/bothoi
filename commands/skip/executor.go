@@ -1,4 +1,4 @@
-package pause
+package skip
 
 import (
 	"bothoi/config"
@@ -30,37 +30,27 @@ func Execute(data *models.Interaction) {
 	clientVoiceChannel := voice.GetVoiceChannelID(data.GuildID)
 	if userVoiceState == nil || userVoiceState.ChannelID != clientVoiceChannel {
 		response = util.BuildPlayerResponse(
-			"Pause error",
+			"Skip error",
 			fmt.Sprintf("<@%s> not in same voice channel as Bothoi", data.Member.User.ID),
 			"error",
 			embed_color.Error,
 		)
 		return
 	}
-	pausing, err := voice.PauseClient(data.GuildID)
+	err := voice.SkipSong(data.GuildID)
 	if err != nil {
 		response = util.BuildPlayerResponse(
-			"Pause error",
-			"Cannot be paused/resumed",
+			"Skip error",
+			"Cannot skip",
 			"error",
 			embed_color.Error,
 		)
 		return
 	}
-	if pausing {
-		response = util.BuildPlayerResponse(
-			"Paused",
-			"Paused by the request of <@"+data.Member.User.ID+">",
-			"/resume to resume",
-			embed_color.Default,
-		)
-	} else {
-		response = util.BuildPlayerResponse(
-			"Resumed",
-			"Resumed by the request of <@"+data.Member.User.ID+">",
-			"",
-			embed_color.Default,
-		)
-	}
-
+	response = util.BuildPlayerResponse(
+		"Skipped",
+		"Skipped by the request of <@"+data.Member.User.ID+">",
+		"skipped",
+		embed_color.Default,
+	)
 }

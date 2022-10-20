@@ -4,6 +4,7 @@ import (
 	"bothoi/commands/pause"
 	"bothoi/commands/play"
 	"bothoi/commands/queue"
+	"bothoi/commands/skip"
 	"bothoi/commands/stop"
 	"bothoi/config"
 	"bothoi/gateway"
@@ -13,11 +14,12 @@ import (
 )
 
 var commandList = []models.AppCommand{
-	play.Command,
-	queue.Command,
-	pause.Command[0],
-	pause.Command[1],
-	stop.Command,
+	//play.Command,
+	//queue.Command,
+	//pause.Command[0],
+	//pause.Command[1],
+	//stop.Command,
+	skip.Command,
 }
 
 var executorList = map[string]func(*models.Interaction){
@@ -26,6 +28,7 @@ var executorList = map[string]func(*models.Interaction){
 	pause.Command[0].Name: pause.Execute,
 	pause.Command[1].Name: pause.Execute,
 	stop.Command.Name:     stop.Execute,
+	skip.Command.Name:     skip.Execute,
 }
 
 func Register() {
@@ -36,7 +39,8 @@ func Register() {
 		header["Authorization"] = "Bot " + config.BOT_TOKEN
 
 		if config.DEVELOPMENT {
-			_, errD := http_util.PostJsonH(config.APP_COMMAND_GUILD_ENDPOINT, command, header)
+			res, errD := http_util.PostJsonH(config.APP_COMMAND_GUILD_ENDPOINT, command, header)
+			log.Println("guild command response: ", string(res))
 			if errD != nil {
 				log.Println(errD)
 				continue

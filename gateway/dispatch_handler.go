@@ -13,7 +13,9 @@ import (
 var executorList = map[string]func(*models.Interaction){}
 
 func mapInteractionExecute(data *models.Interaction) {
-	executorList[data.Data.Name](data)
+	if interaction, ok := executorList[data.Data.Name]; ok {
+		interaction(data)
+	}
 }
 
 func SetExecutorList(list map[string]func(*models.Interaction)) {

@@ -24,6 +24,7 @@ func (client *VoiceClient) play() {
 
 	// encode settings
 	options := dca.StdEncodeOptions
+	options.Volume = 128
 	options.FrameRate = config.DCA_FRAMERATE
 	options.FrameDuration = config.DCA_FRAMEDURATION
 	options.RawOutput = true
@@ -71,6 +72,7 @@ func (client *VoiceClient) play() {
 			client.Unlock()
 			return
 		}
+		client.skip = false
 		client.playing = false
 		if len(client.songQueue) > 1 {
 			client.songQueue = client.songQueue[1:]
@@ -107,7 +109,7 @@ func (client *VoiceClient) encodeSong(reader io.Reader, options *dca.EncodeOptio
 		}
 
 		client.RLock()
-		if client.destroyed {
+		if client.destroyed || client.skip {
 			client.RUnlock()
 			return
 		}

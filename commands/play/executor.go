@@ -49,7 +49,7 @@ func Execute(data *models.Interaction) {
 	if userVoiceState == nil || userVoiceState.GuildID != data.GuildID || userVoiceState.ChannelID == "" {
 		response = util.BuildPlayerResponseData(
 			"Can't play a song :(",
-			fmt.Sprintf("<@%s> not in voice channel", data.Member.User.Username),
+			fmt.Sprintf("<@%s> not in voice channel", data.Member.User.ID),
 			"Error",
 			embed_color.Error,
 		)
@@ -74,7 +74,7 @@ func Execute(data *models.Interaction) {
 		if err.Error() == "Already in a different voice channel" {
 			response = util.BuildPlayerResponseData(
 				"Can't play a song :(",
-				fmt.Sprintf("<@%s> not in the same voice channel as bot", data.Member.User.Username),
+				fmt.Sprintf("<@%s> not in the same voice channel as bot", data.Member.User.ID),
 				"Error",
 				embed_color.Error,
 			)

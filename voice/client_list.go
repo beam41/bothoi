@@ -2,6 +2,7 @@ package voice
 
 import (
 	"bothoi/models"
+	"bothoi/util"
 	"context"
 	"errors"
 	"sync"
@@ -87,7 +88,7 @@ func GetSongQueue(guildID string, start, end int) (playing bool, queue []models.
 	client.RLock()
 	defer client.RUnlock()
 	queue = make([]models.SongItem, end-start)
-	for i, item := range client.songQueue[start:end] {
+	for i, item := range client.songQueue[start:util.Min(len(client.songQueue), end)] {
 		queue[i] = models.SongItem{
 			YtID:        item.YtID,
 			Title:       item.Title,
@@ -122,6 +123,21 @@ func PauseClient(guildID string) (bool, error) {
 	}
 	client.pauseWait.L.Unlock()
 	return client.pausing, nil
+}
+
+// skip a song
+func SkipSong(guildID string) error {
+	clientList.Lock()
+	defer clientList.Unlock()
+	var client = clientList.c[guildID]
+	if client == nil {
+		return errors.New("Client not found")
+	}
+	client.RLock()
+	defer client.RUnlock()
+	client.skip = true
+	client.pauseWait.Broadcast()
+	return nil
 }
 
 func GetVoiceChannelID(guildID string) string {

@@ -31,7 +31,7 @@ func Execute(data *models.Interaction) {
 	if userVoiceState == nil || userVoiceState.ChannelID != clientVoiceChannel {
 		response = util.BuildPlayerResponse(
 			"Cannot stop",
-			fmt.Sprintf("<@%s> not in same voice channel as Bothoi", data.Member.User.Username),
+			fmt.Sprintf("<@%s> not in same voice channel as Bothoi", data.Member.User.ID),
 			"Error",
 			embed_color.Error,
 		)
