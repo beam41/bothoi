@@ -49,6 +49,8 @@ type VoiceClient struct {
 	playing            bool
 	destroyed          bool
 	skip               bool
+	isWaitForExit      bool
+	stopWaitForExit    chan any
 }
 
 // start the client if not started already
@@ -185,17 +187,19 @@ func (client *VoiceClient) connect() {
 		case hbNonce := <-heatbeatAcked:
 			if prevNonce != hbNonce {
 				// handle nonce error
-				log.Println("Nonce invalid")
+				log.Println(client.guildID, "Nonce invalid")
 				StopClient(client.guildID)
 				c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(4006, ""))
 				return
 			}
 		case <-time.After(time.Duration(interval) * time.Millisecond):
 			// uh oh timeout, goodbye
+			log.Println(client.guildID, "Timeout")
 			StopClient(client.guildID)
 			c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(4009, ""))
 			return
 		case <-client.ctx.Done():
+			log.Println(client.guildID, "Done")
 			c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(1000, ""))
 			return
 		}
@@ -361,13 +365,20 @@ func (client *VoiceClient) sendSongFromFrameData() {
 }
 
 func (client *VoiceClient) waitForExit() {
+	client.RLock()
+	client.isWaitForExit = true
+	client.RUnlock()
+
 	select {
+	case <-client.stopWaitForExit:
+		return
 	case <-client.ctx.Done():
 		return
 	case <-time.After(config.IDLE_TIMEOUT):
 		client.RLock()
 		if client.running {
 			client.RUnlock()
+			log.Println(client.guildID, "Idle Timeout")
 			StopClient(client.guildID)
 		} else {
 			client.RUnlock()

@@ -20,6 +20,10 @@ func (client *VoiceClient) play() {
 		return
 	}
 	client.playerRunning = true
+	if client.isWaitForExit {
+		client.isWaitForExit = false
+		client.stopWaitForExit <- struct{}{}
+	}
 	client.Unlock()
 
 	// encode settings
