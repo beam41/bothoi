@@ -367,10 +367,10 @@ func (client *VoiceClient) waitForExit() {
 	case <-time.After(config.IDLE_TIMEOUT):
 		client.RLock()
 		if client.running {
-			client.Unlock()
+			client.RUnlock()
 			StopClient(client.guildID)
 		} else {
-			client.Unlock()
+			client.RUnlock()
 			return
 		}
 	}
