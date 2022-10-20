@@ -16,7 +16,7 @@ import (
 )
 
 func DownloadYt(ytID string) ([]byte, error) {
-	cmd := exec.Command("youtube-dl", "-g", "-f", "bestaudio", ytID)
+	cmd := exec.Command("youtube-dl", "-g", "-f", "bestaudio", "--", ytID)
 
 	stdout, err := cmd.Output()
 	if err != nil {
