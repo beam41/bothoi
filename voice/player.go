@@ -38,13 +38,14 @@ func (client *VoiceClient) play() {
 	// run player
 	for {
 		currentSong := client.songQueue[0]
+		log.Println(client.guildID, "Playing song: ", currentSong.Title)
 		currentSong.DownloadLock.Lock()
 		if currentSong.SongData == nil {
 			sd, err := yt_util.DownloadYt(currentSong.YtID)
 			currentSong.SongData = sd
 			if err != nil {
 				currentSong.DownloadLock.Unlock()
-				log.Println("Can't play this song: ", err)
+				log.Println(client.guildID, "Can't play this song: ", err)
 
 				client.Lock()
 				if len(client.songQueue) > 1 {
