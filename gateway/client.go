@@ -47,8 +47,8 @@ func connection(isResume bool) {
 	}
 
 	heatbeatInterval := make(chan int)
-	heatbeatAcked := make(chan bool)
-	immediateHeartbeat := make(chan bool)
+	heatbeatAcked := make(chan struct{})
+	immediateHeartbeat := make(chan struct{})
 
 	// receive the gateway response
 	go func() {
@@ -79,9 +79,9 @@ func connection(isResume bool) {
 			case gateway_opcode.Hello:
 				heatbeatInterval <- int(payload.D.(map[string]any)["heartbeat_interval"].(float64))
 			case gateway_opcode.HeartbeatAck:
-				heatbeatAcked <- true
+				heatbeatAcked <- struct{}{}
 			case gateway_opcode.Heartbeat:
-				immediateHeartbeat <- true
+				immediateHeartbeat <- struct{}{}
 			case gateway_opcode.Dispatch:
 				go dispatchHandler(c, payload)
 			case gateway_opcode.Reconnect:

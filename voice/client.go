@@ -50,7 +50,7 @@ type VoiceClient struct {
 	destroyed          bool
 	skip               bool
 	isWaitForExit      bool
-	stopWaitForExit    chan any
+	stopWaitForExit    chan struct{}
 }
 
 // start the client if not started already
@@ -366,6 +366,9 @@ func (client *VoiceClient) sendSongFromFrameData() {
 
 func (client *VoiceClient) waitForExit() {
 	client.RLock()
+	if client.isWaitForExit == true {
+		client.stopWaitForExit <- struct{}{}
+	}
 	client.isWaitForExit = true
 	client.RUnlock()
 

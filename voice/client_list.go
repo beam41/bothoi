@@ -24,14 +24,15 @@ func addGuildToClient(guildID, voiceChannelId string) *VoiceClient {
 	clientList.Lock()
 	ctx, cancel := context.WithCancel(context.Background())
 	clientList.c[guildID] = &VoiceClient{
-		guildID:        guildID,
-		voiceChannelID: voiceChannelId,
-		songQueue:      []*models.SongItemWData{},
-		udpReadyWait:   sync.NewCond(&sync.Mutex{}),
-		ctx:            ctx,
-		ctxCancel:      cancel,
-		frameData:      make(chan []byte),
-		pauseWait:      sync.NewCond(&sync.Mutex{}),
+		guildID:         guildID,
+		voiceChannelID:  voiceChannelId,
+		songQueue:       []*models.SongItemWData{},
+		udpReadyWait:    sync.NewCond(&sync.Mutex{}),
+		ctx:             ctx,
+		ctxCancel:       cancel,
+		frameData:       make(chan []byte),
+		pauseWait:       sync.NewCond(&sync.Mutex{}),
+		stopWaitForExit: make(chan struct{}),
 	}
 	clientList.Unlock()
 	return clientList.c[guildID]
