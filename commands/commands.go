@@ -7,22 +7,12 @@ import (
 	"bothoi/commands/skip"
 	"bothoi/commands/stop"
 	"bothoi/config"
-	"bothoi/gateway"
 	"bothoi/models"
 	"bothoi/util/http_util"
 	"log"
 )
 
-var commandList = []models.AppCommand{
-	//play.Command,
-	//queue.Command,
-	//pause.Command[0],
-	//pause.Command[1],
-	//stop.Command,
-	skip.Command,
-}
-
-var executorList = map[string]func(*models.Interaction){
+var ExecutorList = map[string]func(*models.Interaction){
 	play.Command.Name:     play.Execute,
 	queue.Command.Name:    queue.Execute,
 	pause.Command[0].Name: pause.Execute,
@@ -32,7 +22,17 @@ var executorList = map[string]func(*models.Interaction){
 }
 
 func Register() {
-	gateway.SetExecutorList(executorList)
+	if config.NO_COMMAND_REGISTER {
+		return
+	}
+	var commandList = []models.AppCommand{
+		play.Command,
+		queue.Command,
+		pause.Command[0],
+		pause.Command[1],
+		stop.Command,
+		skip.Command,
+	}
 	for _, command := range commandList {
 		log.Println("app command request: ", command)
 		header := map[string]string{}

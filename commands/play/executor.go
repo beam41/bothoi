@@ -87,7 +87,10 @@ func Execute(data *models.Interaction) {
 				"Error",
 				embed_color.Error,
 			)
-			voice.StopClient(data.GuildID)
+			err := voice.StopClient(data.GuildID)
+			if err != nil {
+				log.Println(err)
+			}
 			return
 		}
 	}

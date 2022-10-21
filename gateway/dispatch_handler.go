@@ -1,40 +1,46 @@
 package gateway
 
 import (
+	"bothoi/commands"
 	"bothoi/config"
 	"bothoi/models"
 	"bothoi/states"
-	"sync"
-
-	"github.com/gorilla/websocket"
+	"bothoi/voice"
 	"github.com/mitchellh/mapstructure"
+	"log"
 )
 
-var executorList = map[string]func(*models.Interaction){}
-
 func mapInteractionExecute(data *models.Interaction) {
-	if interaction, ok := executorList[data.Data.Name]; ok {
+	if interaction, ok := commands.ExecutorList[data.Data.Name]; ok {
 		interaction(data)
 	}
 }
 
-func SetExecutorList(list map[string]func(*models.Interaction)) {
-	executorList = list
-}
-
-func dispatchHandler(c *websocket.Conn, payload models.GatewayPayload) {
+func dispatchHandler(payload models.GatewayPayload) {
 	switch payload.T {
 	case "READY":
 		var sessionState models.SessionState
-		mapstructure.Decode(payload.D, &sessionState)
+		err := mapstructure.Decode(payload.D, &sessionState)
+		if err != nil {
+			log.Println(err)
+			return
+		}
 		states.AddSessionState(&sessionState)
 	case "INTERACTION_CREATE":
 		var data models.Interaction
-		mapstructure.Decode(payload.D, &data)
+		err := mapstructure.Decode(payload.D, &data)
+		if err != nil {
+			log.Println(err)
+			return
+		}
 		mapInteractionExecute(&data)
 	case "GUILD_CREATE":
 		var data models.Guild
-		mapstructure.Decode(payload.D, &data)
+		err := mapstructure.Decode(payload.D, &data)
+		if err != nil {
+			log.Println(err)
+			return
+		}
 		// guild voice state don't contain guild id
 		states.AddGuild(&data)
 		var voiceStates []models.VoiceState
@@ -45,43 +51,27 @@ func dispatchHandler(c *websocket.Conn, payload models.GatewayPayload) {
 		states.AddVoiceStateBulk(voiceStates)
 	case "VOICE_STATE_UPDATE":
 		var data *models.VoiceState = new(models.VoiceState)
-		mapstructure.Decode(payload.D, data)
+		err := mapstructure.Decode(payload.D, data)
+		if err != nil {
+			log.Println(err)
+			return
+		}
 		if data.UserID != config.BOT_ID {
 			states.AddVoiceState(data)
 		} else {
-			returnSessionId(data.GuildID, data.SessionID)
+			voice.ReturnSessionId(data.GuildID, data.SessionID)
 		}
 	case "VOICE_SERVER_UPDATE":
 		var data models.VoiceServer
-		mapstructure.Decode(payload.D, &data)
-		returnVoiceServer(data.GuildID, &data)
+		err := mapstructure.Decode(payload.D, &data)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		voice.ReturnVoiceServer(data.GuildID, &data)
 	case "GUILD_UPDATE":
 		// not important now
 	case "GUILD_DELETE":
 		// not important now
-	}
-}
-
-type voiceChanMapChan struct {
-	sessionIdChan   chan<- string
-	voiceServerChan chan<- *models.VoiceServer
-}
-
-var voiceChanMap map[string]voiceChanMapChan = map[string]voiceChanMapChan{}
-var voiceChanMapMutex sync.RWMutex
-
-func returnSessionId(guildID, sessionID string) {
-	voiceChanMapMutex.RLock()
-	defer voiceChanMapMutex.RUnlock()
-	if chanMap, ok := voiceChanMap[guildID]; ok {
-		chanMap.sessionIdChan <- sessionID
-	}
-}
-
-func returnVoiceServer(guildID string, voiceServer *models.VoiceServer) {
-	voiceChanMapMutex.RLock()
-	defer voiceChanMapMutex.RUnlock()
-	if chanMap, ok := voiceChanMap[guildID]; ok {
-		chanMap.voiceServerChan <- voiceServer
 	}
 }

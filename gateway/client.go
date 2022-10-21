@@ -5,23 +5,12 @@ import (
 	"bothoi/models"
 	"bothoi/references/gateway_opcode"
 	"bothoi/states"
-	"bothoi/util/ws_util"
 	"encoding/json"
 	"log"
 	"math/rand"
 	"strings"
-	"sync"
 	"time"
-
-	"github.com/gorilla/websocket"
 )
-
-var conn *websocket.Conn
-
-var sequenceNumber struct {
-	sync.RWMutex
-	n *uint64
-}
 
 // connect to the discord gateway.
 func Connect() {
@@ -33,17 +22,19 @@ func Connect() {
 }
 
 func connection(isResume bool) {
-	c, _, err := websocket.DefaultDialer.Dial(config.GATEWAY_URL, nil)
-	conn = c
-	if err != nil {
-		log.Fatalln(err)
-	}
-	defer c.Close()
+	states.StartGatewayConn()
+	defer states.CloseGatewayConn()
 
 	if !isResume {
-		ws_util.WriteJSONLog(c, models.NewIdentify(), false)
+		err := states.GatewayConnWriteJSON(models.NewIdentify())
+		if err != nil {
+			log.Println(err)
+		}
 	} else {
-		ws_util.WriteJSONLog(c, models.NewResume(sequenceNumber.n, states.GetSessionState().SessionID), false)
+		err := states.GatewayConnWriteJSON(models.NewResume(states.GetSequenceNumber(), states.GetSessionState().SessionID))
+		if err != nil {
+			log.Println(err)
+		}
 	}
 
 	heatbeatInterval := make(chan int)
@@ -54,11 +45,15 @@ func connection(isResume bool) {
 	go func() {
 		for {
 			var payload models.GatewayPayload
-			err := c.ReadJSON(&payload)
+			err := states.GatewayConnReadJSON(&payload)
 			if err != nil {
 				log.Println(err)
 				if strings.HasPrefix(err.Error(), "websocket: close 1001") {
-					ws_util.WriteJSONLog(c, models.NewIdentify(), false)
+					err := states.GatewayConnWriteJSON(models.NewIdentify())
+					if err != nil {
+						log.Println(err)
+						return
+					}
 				}
 				continue
 			}
@@ -71,9 +66,7 @@ func connection(isResume bool) {
 
 			// log.Println("incoming: ", payload)
 			if payload.S != nil {
-				sequenceNumber.Lock()
-				sequenceNumber.n = payload.S
-				sequenceNumber.Unlock()
+				states.SetSequenceNumber(payload.S)
 			}
 			switch payload.Op {
 			case gateway_opcode.Hello:
@@ -83,11 +76,11 @@ func connection(isResume bool) {
 			case gateway_opcode.Heartbeat:
 				immediateHeartbeat <- struct{}{}
 			case gateway_opcode.Dispatch:
-				go dispatchHandler(c, payload)
+				go dispatchHandler(payload)
 			case gateway_opcode.Reconnect:
 				fallthrough
 			case gateway_opcode.InvalidSession:
-				c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseServiceRestart, ""))
+				states.GatewayConnCloseRestart()
 				return
 			}
 		}
@@ -97,8 +90,10 @@ func connection(isResume bool) {
 	interval := <-heatbeatInterval
 
 	time.Sleep(time.Duration(float64(interval)*rand.Float64()) * time.Millisecond)
-	ws_util.WriteJSONLog(c, models.NewHeartbeat(nil), false)
-
+	err := states.GatewayConnWriteJSON(models.NewHeartbeat(nil))
+	if err != nil {
+		log.Println(err)
+	}
 	for {
 		// wait for heartbeat ack
 		select {
@@ -106,7 +101,7 @@ func connection(isResume bool) {
 		case <-time.After(time.Duration(interval) * time.Millisecond):
 			// uh oh timeout, reconnect
 			log.Println("timeout, attempting to reconnect")
-			c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseServiceRestart, ""))
+			states.GatewayConnCloseRestart()
 			return
 		}
 		// wait for next heartbeat
@@ -114,32 +109,11 @@ func connection(isResume bool) {
 		case <-immediateHeartbeat:
 		case <-time.After(time.Duration(interval) * time.Millisecond):
 		}
-		sequenceNumber.RLock()
-		ws_util.WriteJSONLog(c, models.NewHeartbeat(sequenceNumber.n), false)
-		sequenceNumber.RUnlock()
+		states.SequenceNumberRLock()
+		err := states.GatewayConnWriteJSON(models.NewHeartbeat(states.GetSequenceNumber()))
+		if err != nil {
+			log.Println(err)
+		}
+		states.SequenceNumberRUnLock()
 	}
-}
-
-func JoinVoiceChannel(guildID, channelID string, sessionIdChan chan<- string, voiceServerChan chan<- *models.VoiceServer) error {
-	createVoice := models.NewVoiceStateUpdate(guildID, &channelID, false, true)
-	err := ws_util.WriteJSONLog(conn, createVoice, false)
-	if err != nil {
-		return err
-	}
-	voiceChanMapMutex.Lock()
-	defer voiceChanMapMutex.Unlock()
-	voiceChanMap[guildID] = voiceChanMapChan{sessionIdChan, voiceServerChan}
-	return nil
-}
-
-func LeaveVoiceChannel(guildID string) error {
-	leaveVoice := models.NewVoiceStateUpdate(guildID, nil, false, false)
-	err := ws_util.WriteJSONLog(conn, leaveVoice, false)
-	if err != nil {
-		return err
-	}
-	voiceChanMapMutex.Lock()
-	defer voiceChanMapMutex.Unlock()
-	delete(voiceChanMap, guildID)
-	return nil
 }

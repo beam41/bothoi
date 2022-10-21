@@ -2,11 +2,9 @@ package voice
 
 import (
 	"bothoi/config"
-	"bothoi/gateway"
 	"bothoi/models"
 	"bothoi/references/voice_opcode"
 	"bothoi/util"
-	"bothoi/util/ws_util"
 	"context"
 	"crypto/rand"
 	"encoding/binary"
@@ -72,7 +70,7 @@ func StartClient(guildID, channelID string) error {
 	client = addGuildToClient(guildID, channelID)
 	sessionIdChan := make(chan string)
 	voiceServerChan := make(chan *models.VoiceServer)
-	err := gateway.JoinVoiceChannel(guildID, channelID, sessionIdChan, voiceServerChan)
+	err := joinVoiceChannel(guildID, channelID, sessionIdChan, voiceServerChan)
 	if err != nil {
 		return err
 	}
@@ -96,8 +94,14 @@ func StopClient(guildID string) error {
 	if err != nil {
 		return err
 	}
-	gateway.LeaveVoiceChannel(guildID)
+	leaveVoiceChannel(guildID)
 	return nil
+}
+
+func (client *VoiceClient) connWriteJSON(v any) (err error) {
+	log.Println("outgoing voice: ", v)
+	err = client.c.WriteJSON(v)
+	return
 }
 
 func (client *VoiceClient) connect() {
@@ -117,7 +121,7 @@ func (client *VoiceClient) connect() {
 	client.c = c
 	defer c.Close()
 
-	ws_util.WriteJSONLog(client.c, models.NewVoiceIdentify(client.guildID, config.BOT_ID, *client.sessionID, client.voiceServer.Token), true)
+	client.connWriteJSON(models.NewVoiceIdentify(client.guildID, config.BOT_ID, *client.sessionID, client.voiceServer.Token))
 
 	heatbeatInterval := make(chan int)
 	heatbeatAcked := make(chan int64)
@@ -181,7 +185,7 @@ func (client *VoiceClient) connect() {
 		}
 		prevNonce = randNum.Int64()
 
-		ws_util.WriteJSONLog(c, models.NewVoiceHeartbeat(prevNonce), true)
+		client.connWriteJSON(models.NewVoiceHeartbeat(prevNonce))
 
 		select {
 		case hbNonce := <-heatbeatAcked:
@@ -219,7 +223,7 @@ func (client *VoiceClient) connectUdp() {
 	}
 	client.uc = conn
 	ip, port := client.performIpDiscovery()
-	ws_util.WriteJSONLog(client.c, models.NewVoiceSelectProtocol(ip, port, config.PREFERRED_MODE), true)
+	client.connWriteJSON(models.NewVoiceSelectProtocol(ip, port, config.PREFERRED_MODE))
 
 	go client.keepAlive(time.Second * 5)
 }
@@ -296,7 +300,7 @@ func (client *VoiceClient) sendSongFromFrameData() {
 
 	client.RLock()
 	if !client.speaking {
-		ws_util.WriteJSONLog(client.c, models.NewVoiceSpeaking(client.udpInfo.SSRC), true)
+		client.connWriteJSON(models.NewVoiceSpeaking(client.udpInfo.SSRC))
 	}
 	client.RUnlock()
 

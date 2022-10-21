@@ -4,6 +4,7 @@
 package config
 
 const (
+	NO_COMMAND_REGISTER                = true
 	DEVELOPMENT                        = true
 	BOT_TOKEN                          = ""
 	BOT_ID                             = ""

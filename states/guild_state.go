@@ -7,13 +7,12 @@ import (
 
 type guildStateT struct {
 	sync.RWMutex
-	state  map[string]*models.Guild
+	state map[string]*models.Guild
 }
 
 var guildState = &guildStateT{
 	state: map[string]*models.Guild{},
 }
-
 
 func AddGuild(guild *models.Guild) {
 	guildState.Lock()
