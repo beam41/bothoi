@@ -2,9 +2,10 @@ package gateway
 
 import (
 	"bothoi/config"
+	"bothoi/global"
 	"bothoi/models"
 	"bothoi/references/gateway_opcode"
-	"bothoi/states"
+	"bothoi/repo"
 	"encoding/json"
 	"log"
 	"math/rand"
@@ -22,16 +23,16 @@ func Connect() {
 }
 
 func connection(isResume bool) {
-	states.StartGatewayConn()
-	defer states.CloseGatewayConn()
+	global.StartGatewayConn()
+	defer global.CloseGatewayConn()
 
 	if !isResume {
-		err := states.GatewayConnWriteJSON(models.NewIdentify())
+		err := global.GatewayConnWriteJSON(models.NewIdentify())
 		if err != nil {
 			log.Println(err)
 		}
 	} else {
-		err := states.GatewayConnWriteJSON(models.NewResume(states.GetSequenceNumber(), states.GetSessionState().SessionID))
+		err := global.GatewayConnWriteJSON(models.NewResume(global.GetSequenceNumber(), repo.GetSessionState().SessionID))
 		if err != nil {
 			log.Println(err)
 		}
@@ -45,11 +46,11 @@ func connection(isResume bool) {
 	go func() {
 		for {
 			var payload models.GatewayPayload
-			err := states.GatewayConnReadJSON(&payload)
+			err := global.GatewayConnReadJSON(&payload)
 			if err != nil {
 				log.Println(err)
 				if strings.HasPrefix(err.Error(), "websocket: close 1001") {
-					err := states.GatewayConnWriteJSON(models.NewIdentify())
+					err := global.GatewayConnWriteJSON(models.NewIdentify())
 					if err != nil {
 						log.Println(err)
 						return
@@ -66,7 +67,7 @@ func connection(isResume bool) {
 
 			// log.Println("incoming: ", payload)
 			if payload.S != nil {
-				states.SetSequenceNumber(payload.S)
+				global.SetSequenceNumber(payload.S)
 			}
 			switch payload.Op {
 			case gateway_opcode.Hello:
@@ -80,7 +81,7 @@ func connection(isResume bool) {
 			case gateway_opcode.Reconnect:
 				fallthrough
 			case gateway_opcode.InvalidSession:
-				states.GatewayConnCloseRestart()
+				global.GatewayConnCloseRestart()
 				return
 			}
 		}
@@ -90,7 +91,7 @@ func connection(isResume bool) {
 	interval := <-heatbeatInterval
 
 	time.Sleep(time.Duration(float64(interval)*rand.Float64()) * time.Millisecond)
-	err := states.GatewayConnWriteJSON(models.NewHeartbeat(nil))
+	err := global.GatewayConnWriteJSON(models.NewHeartbeat(nil))
 	if err != nil {
 		log.Println(err)
 	}
@@ -101,7 +102,7 @@ func connection(isResume bool) {
 		case <-time.After(time.Duration(interval) * time.Millisecond):
 			// uh oh timeout, reconnect
 			log.Println("timeout, attempting to reconnect")
-			states.GatewayConnCloseRestart()
+			global.GatewayConnCloseRestart()
 			return
 		}
 		// wait for next heartbeat
@@ -109,11 +110,11 @@ func connection(isResume bool) {
 		case <-immediateHeartbeat:
 		case <-time.After(time.Duration(interval) * time.Millisecond):
 		}
-		states.SequenceNumberRLock()
-		err := states.GatewayConnWriteJSON(models.NewHeartbeat(states.GetSequenceNumber()))
+		global.SequenceNumberRLock()
+		err := global.GatewayConnWriteJSON(models.NewHeartbeat(global.GetSequenceNumber()))
 		if err != nil {
 			log.Println(err)
 		}
-		states.SequenceNumberRUnLock()
+		global.SequenceNumberRUnLock()
 	}
 }

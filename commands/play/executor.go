@@ -4,7 +4,7 @@ import (
 	"bothoi/config"
 	"bothoi/models"
 	"bothoi/references/embed_color"
-	"bothoi/states"
+	"bothoi/repo"
 	"bothoi/util"
 	"bothoi/util/http_util"
 	"bothoi/util/yt_util.go"
@@ -16,7 +16,7 @@ import (
 
 func Execute(data *models.Interaction) {
 	options := util.MapInteractionOption(data.Data.Options)
-	userVoiceState := states.GetVoiceState(data.Member.User.ID)
+	userVoiceState := repo.GetVoiceState(data.Member.User.ID)
 
 	// post waiting prevent response timeout
 	url := config.InteractionResponseEndpoint

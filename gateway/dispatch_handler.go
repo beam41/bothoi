@@ -4,7 +4,7 @@ import (
 	"bothoi/commands"
 	"bothoi/config"
 	"bothoi/models"
-	"bothoi/states"
+	"bothoi/repo"
 	"bothoi/voice"
 	"github.com/mitchellh/mapstructure"
 	"log"
@@ -25,7 +25,7 @@ func dispatchHandler(payload models.GatewayPayload) {
 			log.Println(err)
 			return
 		}
-		states.AddSessionState(&sessionState)
+		repo.AddSessionState(&sessionState)
 	case "INTERACTION_CREATE":
 		var data models.Interaction
 		err := mapstructure.Decode(payload.D, &data)
@@ -42,13 +42,13 @@ func dispatchHandler(payload models.GatewayPayload) {
 			return
 		}
 		// guild voice state don't contain guild id
-		states.AddGuild(&data)
+		repo.AddGuild(&data)
 		var voiceStates []models.VoiceState
 		for _, voiceState := range data.VoiceStates {
 			voiceState.GuildID = data.ID
 			voiceStates = append(voiceStates, voiceState)
 		}
-		states.AddVoiceStateBulk(voiceStates)
+		repo.AddVoiceStateBulk(voiceStates)
 	case "VOICE_STATE_UPDATE":
 		var data = new(models.VoiceState)
 		err := mapstructure.Decode(payload.D, data)
@@ -57,7 +57,7 @@ func dispatchHandler(payload models.GatewayPayload) {
 			return
 		}
 		if data.UserID != config.BotId {
-			states.AddVoiceState(data)
+			repo.AddVoiceState(data)
 		} else {
 			voice.ReturnSessionId(data.GuildID, data.SessionID)
 		}

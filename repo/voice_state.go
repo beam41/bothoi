@@ -1,4 +1,4 @@
-package states
+package repo
 
 import (
 	"bothoi/models"
@@ -7,7 +7,7 @@ import (
 
 type voiceStateT struct {
 	sync.RWMutex
-	state  map[string]*models.VoiceState
+	state map[string]*models.VoiceState
 }
 
 var voiceState_ = &voiceStateT{

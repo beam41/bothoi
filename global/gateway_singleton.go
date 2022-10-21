@@ -1,4 +1,4 @@
-package states
+package global
 
 import (
 	"bothoi/config"

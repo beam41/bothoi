@@ -4,7 +4,7 @@ import (
 	"bothoi/config"
 	"bothoi/models"
 	"bothoi/references/embed_color"
-	"bothoi/states"
+	"bothoi/repo"
 	"bothoi/util"
 	"bothoi/util/http_util"
 	"bothoi/voice"
@@ -26,7 +26,7 @@ func Execute(data *models.Interaction) {
 			log.Println(err)
 		}
 	}()
-	userVoiceState := states.GetVoiceState(data.Member.User.ID)
+	userVoiceState := repo.GetVoiceState(data.Member.User.ID)
 	clientVoiceChannel := voice.GetVoiceChannelID(data.GuildID)
 	if userVoiceState == nil || userVoiceState.ChannelID != clientVoiceChannel {
 		response = util.BuildPlayerResponse(

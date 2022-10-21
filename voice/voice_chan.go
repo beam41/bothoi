@@ -1,8 +1,8 @@
 package voice
 
 import (
+	"bothoi/global"
 	"bothoi/models"
-	"bothoi/states"
 	"sync"
 )
 
@@ -32,7 +32,7 @@ func ReturnVoiceServer(guildID string, voiceServer *models.VoiceServer) {
 
 func joinVoiceChannel(guildID, channelID string, sessionIdChan chan<- string, voiceServerChan chan<- *models.VoiceServer) error {
 	createVoice := models.NewVoiceStateUpdate(guildID, &channelID, false, true)
-	err := states.GatewayConnWriteJSON(createVoice)
+	err := global.GatewayConnWriteJSON(createVoice)
 	if err != nil {
 		return err
 	}
@@ -44,7 +44,7 @@ func joinVoiceChannel(guildID, channelID string, sessionIdChan chan<- string, vo
 
 func leaveVoiceChannel(guildID string) error {
 	leaveVoice := models.NewVoiceStateUpdate(guildID, nil, false, false)
-	err := states.GatewayConnWriteJSON(leaveVoice)
+	err := global.GatewayConnWriteJSON(leaveVoice)
 	if err != nil {
 		return err
 	}
