@@ -1,21 +1,22 @@
 package repo
 
 import (
-	"bothoi/models"
+	"bothoi/models/discord_models"
+	"bothoi/models/types"
 	"sync"
 )
 
 type guildStateT struct {
 	sync.RWMutex
-	state map[string]*models.Guild
+	state map[types.Snowflake]*discord_models.Guild
 }
 
 var guildState = &guildStateT{
-	state: map[string]*models.Guild{},
+	state: map[types.Snowflake]*discord_models.Guild{},
 }
 
-func AddGuild(guild *models.Guild) {
+func AddGuild(guild *discord_models.Guild) {
 	guildState.Lock()
-	guildState.state[guild.ID] = guild
+	guildState.state[guild.Id] = guild
 	guildState.Unlock()
 }

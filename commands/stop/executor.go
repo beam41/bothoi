@@ -2,7 +2,7 @@ package stop
 
 import (
 	"bothoi/config"
-	"bothoi/models"
+	"bothoi/models/discord_models"
 	"bothoi/references/embed_color"
 	"bothoi/repo"
 	"bothoi/util"
@@ -13,12 +13,12 @@ import (
 	"strings"
 )
 
-func Execute(data *models.Interaction) {
-	var response models.InteractionResponse
+func Execute(data *discord_models.Interaction) {
+	var response discord_models.InteractionResponse
 	// do response to interaction
 	defer func() {
 		url := config.InteractionResponseEndpoint
-		url = strings.Replace(url, "<interaction_id>", data.ID, 1)
+		url = strings.Replace(url, "<interaction_id>", string(data.Id), 1)
 		url = strings.Replace(url, "<interaction_token>", data.Token, 1)
 
 		_, err := http_util.PostJson(url, response)
@@ -26,18 +26,18 @@ func Execute(data *models.Interaction) {
 			log.Println(err)
 		}
 	}()
-	userVoiceState := repo.GetVoiceState(data.Member.User.ID)
-	clientVoiceChannel := voice.GetVoiceChannelID(data.GuildID)
-	if userVoiceState == nil || userVoiceState.ChannelID != clientVoiceChannel {
+	userVoiceState := repo.GetVoiceState(data.Member.User.Id)
+	clientVoiceChannel := voice.GetVoiceChannelId(data.GuildId)
+	if userVoiceState == nil || *userVoiceState.ChannelId != clientVoiceChannel {
 		response = util.BuildPlayerResponse(
 			"Cannot stop",
-			fmt.Sprintf("<@%s> not in same voice channel as Bothoi", data.Member.User.ID),
+			fmt.Sprintf("<@%s> not in same voice channel as Bothoi", data.Member.User.Id),
 			"Error",
 			embed_color.Error,
 		)
 		return
 	}
-	err := voice.StopClient(data.GuildID)
+	err := voice.StopClient(data.GuildId)
 	if err != nil {
 		response = util.BuildPlayerResponse(
 			"Stopped",
@@ -49,7 +49,7 @@ func Execute(data *models.Interaction) {
 	}
 	response = util.BuildPlayerResponse(
 		"Stopped",
-		"Stopped by the request of <@"+data.Member.User.ID+">",
+		"Stopped by the request of <@"+string(data.Member.User.Id)+">",
 		"goodbye",
 		embed_color.Default,
 	)

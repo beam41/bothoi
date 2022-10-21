@@ -7,12 +7,12 @@ import (
 	"bothoi/commands/skip"
 	"bothoi/commands/stop"
 	"bothoi/config"
-	"bothoi/models"
+	"bothoi/models/discord_models"
 	"bothoi/util/http_util"
 	"log"
 )
 
-var ExecutorList = map[string]func(*models.Interaction){
+var ExecutorList = map[string]func(*discord_models.Interaction){
 	play.Command.Name:     play.Execute,
 	queue.Command.Name:    queue.Execute,
 	pause.Command[0].Name: pause.Execute,
@@ -25,7 +25,7 @@ func Register() {
 	if config.NoCommandRegister {
 		return
 	}
-	var commandList = []models.AppCommand{
+	var commandList = []discord_models.AppCommand{
 		play.Command,
 		queue.Command,
 		pause.Command[0],

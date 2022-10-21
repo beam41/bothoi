@@ -1,14 +1,14 @@
-package models
+package discord_models
 
 type InteractionResponse struct {
-	Type int8                    `json:"type" mapstructure:"type"`
-	Data InteractionResponseData `json:"data" mapstructure:"data"`
+	Type uint8                   `json:"types" mapstructure:"types"`
+	Data InteractionCallbackData `json:"data" mapstructure:"data"`
 }
 
-type InteractionResponseData struct {
+type InteractionCallbackData struct {
 	Tts             *bool           `json:"tts,omitempty" mapstructure:"tts"`
 	Content         *string         `json:"content,omitempty" mapstructure:"content"`
 	Embeds          []Embed         `json:"embeds,omitempty" mapstructure:"embeds"`
-	Flags           *int64          `json:"flags,omitempty" mapstructure:"flags"`
+	Flags           *uint8          `json:"flags,omitempty" mapstructure:"flags"`
 	AllowedMentions *AllowedMention `json:"allowed_mentions,omitempty" mapstructure:"allowed_mentions"`
 }

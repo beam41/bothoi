@@ -2,54 +2,55 @@ package voice
 
 import (
 	"bothoi/global"
-	"bothoi/models"
+	"bothoi/models/discord_models"
+	"bothoi/models/types"
 	"sync"
 )
 
 type voiceChanMapChan struct {
 	sessionIdChan   chan<- string
-	voiceServerChan chan<- *models.VoiceServer
+	voiceServerChan chan<- *discord_models.VoiceServer
 }
 
-var voiceChanMap = map[string]voiceChanMapChan{}
+var voiceChanMap = map[types.Snowflake]voiceChanMapChan{}
 var voiceChanMapMutex sync.RWMutex
 
-func ReturnSessionId(guildID, sessionID string) {
+func ReturnSessionId(guildId types.Snowflake, sessionId string) {
 	voiceChanMapMutex.RLock()
 	defer voiceChanMapMutex.RUnlock()
-	if chanMap, ok := voiceChanMap[guildID]; ok {
-		chanMap.sessionIdChan <- sessionID
+	if chanMap, ok := voiceChanMap[guildId]; ok {
+		chanMap.sessionIdChan <- sessionId
 	}
 }
 
-func ReturnVoiceServer(guildID string, voiceServer *models.VoiceServer) {
+func ReturnVoiceServer(guildId types.Snowflake, voiceServer *discord_models.VoiceServer) {
 	voiceChanMapMutex.RLock()
 	defer voiceChanMapMutex.RUnlock()
-	if chanMap, ok := voiceChanMap[guildID]; ok {
+	if chanMap, ok := voiceChanMap[guildId]; ok {
 		chanMap.voiceServerChan <- voiceServer
 	}
 }
 
-func joinVoiceChannel(guildID, channelID string, sessionIdChan chan<- string, voiceServerChan chan<- *models.VoiceServer) error {
-	createVoice := models.NewVoiceStateUpdate(guildID, &channelID, false, true)
+func joinVoiceChannel(guildId, channelId types.Snowflake, sessionIdChan chan<- string, voiceServerChan chan<- *discord_models.VoiceServer) error {
+	createVoice := discord_models.NewVoiceStateUpdate(guildId, &channelId, false, true)
 	err := global.GatewayConnWriteJSON(createVoice)
 	if err != nil {
 		return err
 	}
 	voiceChanMapMutex.Lock()
 	defer voiceChanMapMutex.Unlock()
-	voiceChanMap[guildID] = voiceChanMapChan{sessionIdChan, voiceServerChan}
+	voiceChanMap[guildId] = voiceChanMapChan{sessionIdChan, voiceServerChan}
 	return nil
 }
 
-func leaveVoiceChannel(guildID string) error {
-	leaveVoice := models.NewVoiceStateUpdate(guildID, nil, false, false)
+func leaveVoiceChannel(guildId types.Snowflake) error {
+	leaveVoice := discord_models.NewVoiceStateUpdate(guildId, nil, false, false)
 	err := global.GatewayConnWriteJSON(leaveVoice)
 	if err != nil {
 		return err
 	}
 	voiceChanMapMutex.Lock()
 	defer voiceChanMapMutex.Unlock()
-	delete(voiceChanMap, guildID)
+	delete(voiceChanMap, guildId)
 	return nil
 }

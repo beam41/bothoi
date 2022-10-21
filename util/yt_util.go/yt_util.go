@@ -16,8 +16,8 @@ import (
 	"sync"
 )
 
-func DownloadYt(ytID string) ([]byte, error) {
-	cmd := exec.Command("youtube-dl", "-g", "-f", "bestaudio", "--", ytID)
+func DownloadYt(ytId string) ([]byte, error) {
+	cmd := exec.Command("youtube-dl", "-g", "-f", "bestaudio", "--", ytId)
 
 	stdout, err := cmd.Output()
 	if err != nil {
@@ -124,8 +124,8 @@ func SearchYt(searchStr string) (models.SongItem, error) {
 	}
 	return models.SongItem{
 		Title:       results[0],
-		YtID:        results[1],
+		YtId:        results[1],
 		Duration:    results[2],
-		RequesterID: "",
+		RequesterId: "",
 	}, nil
 }

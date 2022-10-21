@@ -3,23 +3,23 @@ package gateway
 import (
 	"bothoi/commands"
 	"bothoi/config"
-	"bothoi/models"
+	"bothoi/models/discord_models"
 	"bothoi/repo"
 	"bothoi/voice"
 	"github.com/mitchellh/mapstructure"
 	"log"
 )
 
-func mapInteractionExecute(data *models.Interaction) {
+func mapInteractionExecute(data *discord_models.Interaction) {
 	if interaction, ok := commands.ExecutorList[data.Data.Name]; ok {
 		interaction(data)
 	}
 }
 
-func dispatchHandler(payload models.GatewayPayload) {
+func dispatchHandler(payload discord_models.GatewayPayload) {
 	switch payload.T {
 	case "READY":
-		var sessionState models.SessionState
+		var sessionState discord_models.ReadyEvent
 		err := mapstructure.Decode(payload.D, &sessionState)
 		if err != nil {
 			log.Println(err)
@@ -27,7 +27,7 @@ func dispatchHandler(payload models.GatewayPayload) {
 		}
 		repo.AddSessionState(&sessionState)
 	case "INTERACTION_CREATE":
-		var data models.Interaction
+		var data discord_models.Interaction
 		err := mapstructure.Decode(payload.D, &data)
 		if err != nil {
 			log.Println(err)
@@ -35,7 +35,7 @@ func dispatchHandler(payload models.GatewayPayload) {
 		}
 		mapInteractionExecute(&data)
 	case "GUILD_CREATE":
-		var data models.Guild
+		var data discord_models.Guild
 		err := mapstructure.Decode(payload.D, &data)
 		if err != nil {
 			log.Println(err)
@@ -43,32 +43,32 @@ func dispatchHandler(payload models.GatewayPayload) {
 		}
 		// guild voice state don't contain guild id
 		repo.AddGuild(&data)
-		var voiceStates []models.VoiceState
+		var voiceStates []discord_models.VoiceState
 		for _, voiceState := range data.VoiceStates {
-			voiceState.GuildID = data.ID
+			voiceState.GuildId = data.Id
 			voiceStates = append(voiceStates, voiceState)
 		}
 		repo.AddVoiceStateBulk(voiceStates)
 	case "VOICE_STATE_UPDATE":
-		var data = new(models.VoiceState)
+		var data = new(discord_models.VoiceState)
 		err := mapstructure.Decode(payload.D, data)
 		if err != nil {
 			log.Println(err)
 			return
 		}
-		if data.UserID != config.BotId {
+		if data.UserId != config.BotId {
 			repo.AddVoiceState(data)
 		} else {
-			voice.ReturnSessionId(data.GuildID, data.SessionID)
+			voice.ReturnSessionId(data.GuildId, data.SessionId)
 		}
 	case "VOICE_SERVER_UPDATE":
-		var data models.VoiceServer
+		var data discord_models.VoiceServer
 		err := mapstructure.Decode(payload.D, &data)
 		if err != nil {
 			log.Println(err)
 			return
 		}
-		voice.ReturnVoiceServer(data.GuildID, &data)
+		voice.ReturnVoiceServer(data.GuildId, &data)
 	case "GUILD_UPDATE":
 		// not important now
 	case "GUILD_DELETE":

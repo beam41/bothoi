@@ -1,26 +1,23 @@
 package models
 
-import "sync"
+import (
+	"bothoi/models/types"
+	"sync"
+)
 
 type SongItem struct {
-	YtID        string
+	YtId        string
 	Title       string
 	Duration    string
-	RequesterID string
+	RequesterId types.Snowflake
 }
 
 type SongItemWData struct {
-	YtID         string
+	YtId         string
 	Title        string
 	Duration     string
-	RequesterID  string
+	RequesterId  types.Snowflake
 	SongData     []byte
 	DownloadLock sync.Mutex
 	Downloading  bool
-}
-
-type VoiceServer struct {
-	Token    string `json:"token" mapstructure:"token"`
-	GuildID  string `json:"guild_id" mapstructure:"guild_id"`
-	Endpoint string `json:"endpoint" mapstructure:"endpoint"`
 }

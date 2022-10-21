@@ -3,6 +3,8 @@ package voice
 import (
 	"bothoi/config"
 	"bothoi/models"
+	"bothoi/models/discord_models"
+	"bothoi/models/types"
 	"bothoi/references/voice_opcode"
 	"bothoi/util"
 	"context"
@@ -27,15 +29,15 @@ type VClient struct {
 	sync.RWMutex
 	ctx                context.Context
 	ctxCancel          context.CancelFunc
-	guildID            string
-	voiceChannelID     string
-	sessionID          *string
+	guildId            types.Snowflake
+	voiceChannelId     types.Snowflake
+	sessionId          *string
 	songQueue          []*models.SongItemWData
-	voiceServer        *models.VoiceServer
+	voiceServer        *discord_models.VoiceServer
 	c                  *websocket.Conn
 	uc                 *net.UDPConn
-	sessionDescription *models.SessionDescription
-	udpInfo            *models.UDPInfo
+	sessionDescription *discord_models.SessionDescription
+	udpInfo            *discord_models.UDPInfo
 	running            bool
 	playerRunning      bool
 	udpReady           bool
@@ -52,14 +54,14 @@ type VClient struct {
 }
 
 // start the client if not started already
-func StartClient(guildID, channelID string) error {
+func StartClient(guildId, channelId types.Snowflake) error {
 	clientList.RLock()
-	var client = clientList.c[guildID]
+	var client = clientList.c[guildId]
 	if client != nil {
 		clientList.RUnlock()
 		client.RLock()
 		defer client.RUnlock()
-		if (client.voiceChannelID != "") && (client.voiceChannelID != channelID) {
+		if (client.voiceChannelId != "") && (client.voiceChannelId != channelId) {
 			return errors.New("already in a different voice channel")
 		} else if client.running {
 			return nil
@@ -67,10 +69,10 @@ func StartClient(guildID, channelID string) error {
 	}
 	clientList.RUnlock()
 
-	client = addGuildToClient(guildID, channelID)
+	client = addGuildToClient(guildId, channelId)
 	sessionIdChan := make(chan string)
-	voiceServerChan := make(chan *models.VoiceServer)
-	err := joinVoiceChannel(guildID, channelID, sessionIdChan, voiceServerChan)
+	voiceServerChan := make(chan *discord_models.VoiceServer)
+	err := joinVoiceChannel(guildId, channelId, sessionIdChan, voiceServerChan)
 	if err != nil {
 		return err
 	}
@@ -80,7 +82,7 @@ func StartClient(guildID, channelID string) error {
 		sessionId, voiceServer := <-sessionIdChan, <-voiceServerChan
 		client.Lock()
 		defer client.Unlock()
-		client.sessionID = &sessionId
+		client.sessionId = &sessionId
 		client.voiceServer = voiceServer
 		go client.connect()
 	}()
@@ -89,12 +91,12 @@ func StartClient(guildID, channelID string) error {
 }
 
 // remove client from list and properly leave
-func StopClient(guildID string) error {
-	err := removeClient(guildID)
+func StopClient(guildId types.Snowflake) error {
+	err := removeClient(guildId)
 	if err != nil {
 		return err
 	}
-	err = leaveVoiceChannel(guildID)
+	err = leaveVoiceChannel(guildId)
 	if err != nil {
 		return err
 	}
@@ -129,7 +131,7 @@ func (client *VClient) connect() {
 		}
 	}(c)
 
-	err = client.connWriteJSON(models.NewVoiceIdentify(client.guildID, config.BotId, *client.sessionID, client.voiceServer.Token))
+	err = client.connWriteJSON(discord_models.NewVoiceIdentify(client.guildId, config.BotId, *client.sessionId, client.voiceServer.Token))
 	if err != nil {
 		log.Println(err)
 	}
@@ -140,7 +142,7 @@ func (client *VClient) connect() {
 	// receive the gateway response
 	go func() {
 		for {
-			var payload models.VoiceGatewayPayload
+			var payload discord_models.VoiceGatewayPayload
 			err := c.ReadJSON(&payload)
 			if err != nil {
 				client.RLock()
@@ -163,7 +165,7 @@ func (client *VClient) connect() {
 				n, _ := strconv.ParseInt(payload.D.(string), 10, 64)
 				heatbeatAcked <- n
 			case voice_opcode.Ready:
-				var data models.UDPInfo
+				var data discord_models.UDPInfo
 				err := mapstructure.Decode(payload.D, &data)
 				if err != nil {
 					log.Println(err)
@@ -177,7 +179,7 @@ func (client *VClient) connect() {
 				go client.connectUdp()
 				go client.sendSongFromFrameData()
 			case voice_opcode.SessionDescription:
-				var data models.SessionDescription
+				var data discord_models.SessionDescription
 				err := mapstructure.Decode(payload.D, &data)
 				if err != nil {
 					log.Println(err)
@@ -204,7 +206,7 @@ func (client *VClient) connect() {
 		}
 		prevNonce = randNum.Int64()
 
-		err = client.connWriteJSON(models.NewVoiceHeartbeat(prevNonce))
+		err = client.connWriteJSON(discord_models.NewVoiceHeartbeat(prevNonce))
 		if err != nil {
 			log.Println(err)
 		}
@@ -212,8 +214,8 @@ func (client *VClient) connect() {
 		case hbNonce := <-heatbeatAcked:
 			if prevNonce != hbNonce {
 				// handle nonce error
-				log.Println(client.guildID, "Nonce invalid")
-				err := StopClient(client.guildID)
+				log.Println(client.guildId, "Nonce invalid")
+				err := StopClient(client.guildId)
 				if err != nil {
 					log.Println(err)
 				}
@@ -225,8 +227,8 @@ func (client *VClient) connect() {
 			}
 		case <-time.After(time.Duration(interval) * time.Millisecond):
 			// uh oh timeout, goodbye
-			log.Println(client.guildID, "Timeout")
-			err := StopClient(client.guildID)
+			log.Println(client.guildId, "Timeout")
+			err := StopClient(client.guildId)
 			if err != nil {
 				log.Println(err)
 			}
@@ -236,7 +238,7 @@ func (client *VClient) connect() {
 			}
 			return
 		case <-client.ctx.Done():
-			log.Println(client.guildID, "Done")
+			log.Println(client.guildId, "Done")
 			err := c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(1000, ""))
 			if err != nil {
 				log.Println(err)
@@ -259,7 +261,7 @@ func (client *VClient) connectUdp() {
 	}
 	client.uc = conn
 	ip, port := client.performIpDiscovery()
-	err = client.connWriteJSON(models.NewVoiceSelectProtocol(ip, port, config.PreferredMode))
+	err = client.connWriteJSON(discord_models.NewVoiceSelectProtocol(ip, port, config.PreferredMode))
 	if err != nil {
 		log.Println(err)
 	}
@@ -344,7 +346,7 @@ func (client *VClient) sendSongFromFrameData() {
 
 	client.RLock()
 	if !client.speaking {
-		err := client.connWriteJSON(models.NewVoiceSpeaking(client.udpInfo.SSRC))
+		err := client.connWriteJSON(discord_models.NewVoiceSpeaking(client.udpInfo.SSRC))
 		if err != nil {
 			log.Println(err)
 		}
@@ -432,8 +434,8 @@ func (client *VClient) waitForExit() {
 		client.RLock()
 		if client.running {
 			client.RUnlock()
-			log.Println(client.guildID, "Idle Timeout")
-			err := StopClient(client.guildID)
+			log.Println(client.guildId, "Idle Timeout")
+			err := StopClient(client.guildId)
 			if err != nil {
 				log.Println(err)
 			}

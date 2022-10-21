@@ -2,7 +2,7 @@ package queue
 
 import (
 	"bothoi/config"
-	"bothoi/models"
+	"bothoi/models/discord_models"
 	"bothoi/references/embed_color"
 	"bothoi/util"
 	"bothoi/util/http_util"
@@ -12,12 +12,12 @@ import (
 	"strings"
 )
 
-func Execute(data *models.Interaction) {
-	var response models.InteractionResponse
+func Execute(data *discord_models.Interaction) {
+	var response discord_models.InteractionResponse
 	// do response to interaction
 	defer func() {
 		url := config.InteractionResponseEndpoint
-		url = strings.Replace(url, "<interaction_id>", data.ID, 1)
+		url = strings.Replace(url, "<interaction_id>", string(data.Id), 1)
 		url = strings.Replace(url, "<interaction_token>", data.Token, 1)
 
 		_, err := http_util.PostJson(url, response)
@@ -25,7 +25,7 @@ func Execute(data *models.Interaction) {
 			log.Println(err)
 		}
 	}()
-	var playing, songQ = voice.GetSongQueue(data.GuildID, 0, 10)
+	var playing, songQ = voice.GetSongQueue(data.GuildId, 0, 10)
 	if songQ == nil || len(songQ) == 0 {
 		response = util.BuildPlayerResponse(
 			"No songs in queue",
@@ -39,12 +39,12 @@ func Execute(data *models.Interaction) {
 	res := "Song in queue (Requested by)\n"
 
 	if playing {
-		res += fmt.Sprintf("**Currently Playing**\n%s (<@%s>)\n", songQ[0].Title, songQ[0].RequesterID)
+		res += fmt.Sprintf("**Currently Playing**\n%s (<@%s>)\n", songQ[0].Title, songQ[0].RequesterId)
 		songQ = songQ[1:]
 	}
 
 	for i, song := range songQ {
-		res += fmt.Sprintf("%d. %s (<@%s>)\n", i+1, song.Title, song.RequesterID)
+		res += fmt.Sprintf("%d. %s (<@%s>)\n", i+1, song.Title, song.RequesterId)
 	}
 
 	response = util.BuildPlayerResponse(

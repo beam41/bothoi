@@ -1,4 +1,4 @@
-package models
+package discord_models
 
 // it's Opcode 2 Ready payload but called it that is quite bad lol
 type UDPInfo struct {

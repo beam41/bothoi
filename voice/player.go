@@ -38,14 +38,14 @@ func (client *VClient) play() {
 	// run player
 	for {
 		currentSong := client.songQueue[0]
-		log.Println(client.guildID, "Playing song: ", currentSong.Title)
+		log.Println(client.guildId, "Playing song: ", currentSong.Title)
 		currentSong.DownloadLock.Lock()
 		if currentSong.SongData == nil {
-			sd, err := yt_util.DownloadYt(currentSong.YtID)
+			sd, err := yt_util.DownloadYt(currentSong.YtId)
 			currentSong.SongData = sd
 			if err != nil {
 				currentSong.DownloadLock.Unlock()
-				log.Println(client.guildID, "Can't play this song: ", err)
+				log.Println(client.guildId, "Can't play this song: ", err)
 
 				client.Lock()
 				if len(client.songQueue) > 1 {
@@ -144,7 +144,7 @@ func (client *VClient) downloadUpcoming() {
 		go func() {
 			song1.DownloadLock.Lock()
 			if song1.SongData == nil {
-				sd, _ := yt_util.DownloadYt(song1.YtID)
+				sd, _ := yt_util.DownloadYt(song1.YtId)
 				song1.SongData = sd
 			}
 			song1.DownloadLock.Unlock()

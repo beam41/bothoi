@@ -1,6 +1,6 @@
 package embed_color
 
-type EmbedColor int32
+type EmbedColor uint32
 
 const (
 	Playing EmbedColor = 0x9ccc65

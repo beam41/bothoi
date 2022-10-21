@@ -3,7 +3,7 @@ package gateway
 import (
 	"bothoi/config"
 	"bothoi/global"
-	"bothoi/models"
+	"bothoi/models/discord_models"
 	"bothoi/references/gateway_opcode"
 	"bothoi/repo"
 	"encoding/json"
@@ -27,12 +27,12 @@ func connection(isResume bool) {
 	defer global.CloseGatewayConn()
 
 	if !isResume {
-		err := global.GatewayConnWriteJSON(models.NewIdentify())
+		err := global.GatewayConnWriteJSON(discord_models.NewIdentify())
 		if err != nil {
 			log.Println(err)
 		}
 	} else {
-		err := global.GatewayConnWriteJSON(models.NewResume(global.GetSequenceNumber(), repo.GetSessionState().SessionID))
+		err := global.GatewayConnWriteJSON(discord_models.NewResume(global.GetSequenceNumber(), repo.GetSessionState().SessionId))
 		if err != nil {
 			log.Println(err)
 		}
@@ -45,12 +45,12 @@ func connection(isResume bool) {
 	// receive the gateway response
 	go func() {
 		for {
-			var payload models.GatewayPayload
+			var payload discord_models.GatewayPayload
 			err := global.GatewayConnReadJSON(&payload)
 			if err != nil {
 				log.Println(err)
 				if strings.HasPrefix(err.Error(), "websocket: close 1001") {
-					err := global.GatewayConnWriteJSON(models.NewIdentify())
+					err := global.GatewayConnWriteJSON(discord_models.NewIdentify())
 					if err != nil {
 						log.Println(err)
 						return
@@ -91,7 +91,7 @@ func connection(isResume bool) {
 	interval := <-heatbeatInterval
 
 	time.Sleep(time.Duration(float64(interval)*rand.Float64()) * time.Millisecond)
-	err := global.GatewayConnWriteJSON(models.NewHeartbeat(nil))
+	err := global.GatewayConnWriteJSON(discord_models.NewHeartbeat(nil))
 	if err != nil {
 		log.Println(err)
 	}
@@ -111,7 +111,7 @@ func connection(isResume bool) {
 		case <-time.After(time.Duration(interval) * time.Millisecond):
 		}
 		global.SequenceNumberRLock()
-		err := global.GatewayConnWriteJSON(models.NewHeartbeat(global.GetSequenceNumber()))
+		err := global.GatewayConnWriteJSON(discord_models.NewHeartbeat(global.GetSequenceNumber()))
 		if err != nil {
 			log.Println(err)
 		}

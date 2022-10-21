@@ -1,7 +1,8 @@
-package models
+package discord_models
 
 import (
 	"bothoi/config"
+	"bothoi/models/types"
 	"bothoi/references/gateway_opcode"
 	"bothoi/references/voice_opcode"
 	"strconv"
@@ -44,7 +45,7 @@ func NewIdentify() GatewayPayload {
 	}
 }
 
-func NewResume(s *uint64, sessionId string) GatewayPayload {
+func NewResume(s *uint64, sessionId types.Snowflake) GatewayPayload {
 	return GatewayPayload{
 		Op: gateway_opcode.Resume,
 		D: map[string]any{
@@ -55,7 +56,7 @@ func NewResume(s *uint64, sessionId string) GatewayPayload {
 	}
 }
 
-func NewVoiceStateUpdate(guildId string, voiceId *string, mute, deaf bool) GatewayPayload {
+func NewVoiceStateUpdate(guildId types.Snowflake, voiceId *types.Snowflake, mute, deaf bool) GatewayPayload {
 	return GatewayPayload{
 		Op: gateway_opcode.VoiceStateUpdate,
 		D: map[string]any{
@@ -67,7 +68,7 @@ func NewVoiceStateUpdate(guildId string, voiceId *string, mute, deaf bool) Gatew
 	}
 }
 
-func NewVoiceIdentify(guildId, userId, sessionId, token string) VoiceGatewayPayload {
+func NewVoiceIdentify(guildId, userId types.Snowflake, sessionId, token string) VoiceGatewayPayload {
 	return VoiceGatewayPayload{
 		Op: voice_opcode.Identify,
 		D: map[string]any{

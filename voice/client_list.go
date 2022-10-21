@@ -2,6 +2,7 @@ package voice
 
 import (
 	"bothoi/models"
+	"bothoi/models/types"
 	"bothoi/util"
 	"context"
 	"errors"
@@ -10,22 +11,22 @@ import (
 
 type voiceClientT struct {
 	sync.RWMutex
-	c map[string]*VClient
+	c map[types.Snowflake]*VClient
 }
 
 var clientList = &voiceClientT{
-	c: map[string]*VClient{},
+	c: map[types.Snowflake]*VClient{},
 }
 
-func addGuildToClient(guildID, voiceChannelId string) *VClient {
-	if clientList.c[guildID] != nil {
-		return clientList.c[guildID]
+func addGuildToClient(guildId, voiceChannelId types.Snowflake) *VClient {
+	if clientList.c[guildId] != nil {
+		return clientList.c[guildId]
 	}
 	clientList.Lock()
 	ctx, cancel := context.WithCancel(context.Background())
-	clientList.c[guildID] = &VClient{
-		guildID:         guildID,
-		voiceChannelID:  voiceChannelId,
+	clientList.c[guildId] = &VClient{
+		guildId:         guildId,
+		voiceChannelId:  voiceChannelId,
 		songQueue:       []*models.SongItemWData{},
 		udpReadyWait:    sync.NewCond(&sync.Mutex{}),
 		ctx:             ctx,
@@ -35,24 +36,24 @@ func addGuildToClient(guildID, voiceChannelId string) *VClient {
 		stopWaitForExit: make(chan struct{}),
 	}
 	clientList.Unlock()
-	return clientList.c[guildID]
+	return clientList.c[guildId]
 }
 
 // add song to the song queue and start playing if not play already
-func AppendSongToSongQueue(guildID string, songItem models.SongItem) int {
+func AppendSongToSongQueue(guildId types.Snowflake, songItem models.SongItem) int {
 	clientList.RLock()
 	defer clientList.RUnlock()
-	var client = clientList.c[guildID]
+	var client = clientList.c[guildId]
 	if client == nil {
 		return 0
 	}
 	client.Lock()
 	defer client.Unlock()
 	client.songQueue = append(client.songQueue, &models.SongItemWData{
-		YtID:        songItem.YtID,
+		YtId:        songItem.YtId,
 		Title:       songItem.Title,
 		Duration:    songItem.Duration,
-		RequesterID: songItem.RequesterID,
+		RequesterId: songItem.RequesterId,
 	})
 	go client.play()
 	go client.downloadUpcoming()
@@ -60,10 +61,10 @@ func AppendSongToSongQueue(guildID string, songItem models.SongItem) int {
 }
 
 // stop playing and remove the client from the list
-func removeClient(guildID string) error {
+func removeClient(guildId types.Snowflake) error {
 	clientList.Lock()
 	defer clientList.Unlock()
-	var client = clientList.c[guildID]
+	var client = clientList.c[guildId]
 	if client == nil {
 		return errors.New("client not found")
 	}
@@ -73,16 +74,16 @@ func removeClient(guildID string) error {
 	client.udpReadyWait.Broadcast()
 	client.pauseWait.Broadcast()
 	client.ctxCancel()
-	delete(clientList.c, guildID)
+	delete(clientList.c, guildId)
 	close(client.frameData)
 	return nil
 }
 
 // get the copy of current song queue
-func GetSongQueue(guildID string, start, end int) (playing bool, queue []models.SongItem) {
+func GetSongQueue(guildId types.Snowflake, start, end int) (playing bool, queue []models.SongItem) {
 	clientList.RLock()
 	defer clientList.RUnlock()
-	var client = clientList.c[guildID]
+	var client = clientList.c[guildId]
 	if client == nil {
 		return false, nil
 	}
@@ -91,27 +92,27 @@ func GetSongQueue(guildID string, start, end int) (playing bool, queue []models.
 	queue = make([]models.SongItem, end-start)
 	for i, item := range client.songQueue[start:util.Min(len(client.songQueue), end)] {
 		queue[i] = models.SongItem{
-			YtID:        item.YtID,
+			YtId:        item.YtId,
 			Title:       item.Title,
 			Duration:    item.Duration,
-			RequesterID: item.RequesterID,
+			RequesterId: item.RequesterId,
 		}
 	}
 	return client.playing && !client.pausing, queue
 }
 
-func ClientExist(guildID string) bool {
+func ClientExist(guildId types.Snowflake) bool {
 	clientList.RLock()
 	defer clientList.RUnlock()
-	var client = clientList.c[guildID]
+	var client = clientList.c[guildId]
 	return client != nil
 }
 
 // pause/resume the music player return true if the player is paused
-func PauseClient(guildID string) (bool, error) {
+func PauseClient(guildId types.Snowflake) (bool, error) {
 	clientList.Lock()
 	defer clientList.Unlock()
-	var client = clientList.c[guildID]
+	var client = clientList.c[guildId]
 	if client == nil {
 		return false, errors.New("client not found")
 	}
@@ -127,10 +128,10 @@ func PauseClient(guildID string) (bool, error) {
 }
 
 // skip a song
-func SkipSong(guildID string) error {
+func SkipSong(guildId types.Snowflake) error {
 	clientList.Lock()
 	defer clientList.Unlock()
-	var client = clientList.c[guildID]
+	var client = clientList.c[guildId]
 	if client == nil {
 		return errors.New("client not found")
 	}
@@ -141,14 +142,14 @@ func SkipSong(guildID string) error {
 	return nil
 }
 
-func GetVoiceChannelID(guildID string) string {
+func GetVoiceChannelId(guildId types.Snowflake) types.Snowflake {
 	clientList.RLock()
 	defer clientList.RUnlock()
-	var client = clientList.c[guildID]
+	var client = clientList.c[guildId]
 	if client == nil {
 		return ""
 	}
 	client.RLock()
 	defer client.RUnlock()
-	return client.voiceChannelID
+	return client.voiceChannelId
 }

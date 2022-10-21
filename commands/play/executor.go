@@ -2,7 +2,7 @@ package play
 
 import (
 	"bothoi/config"
-	"bothoi/models"
+	"bothoi/models/discord_models"
 	"bothoi/references/embed_color"
 	"bothoi/repo"
 	"bothoi/util"
@@ -14,13 +14,13 @@ import (
 	"strings"
 )
 
-func Execute(data *models.Interaction) {
+func Execute(data *discord_models.Interaction) {
 	options := util.MapInteractionOption(data.Data.Options)
-	userVoiceState := repo.GetVoiceState(data.Member.User.ID)
+	userVoiceState := repo.GetVoiceState(data.Member.User.Id)
 
 	// post waiting prevent response timeout
 	url := config.InteractionResponseEndpoint
-	url = strings.Replace(url, "<interaction_id>", data.ID, 1)
+	url = strings.Replace(url, "<interaction_id>", string(data.Id), 1)
 	url = strings.Replace(url, "<interaction_token>", data.Token, 1)
 
 	_, err := http_util.PostJson(url, util.BuildPlayerResponse(
@@ -33,7 +33,7 @@ func Execute(data *models.Interaction) {
 		log.Println(err)
 	}
 
-	var response models.InteractionResponseData
+	var response discord_models.InteractionCallbackData
 	// do response to interaction
 	defer func() {
 		url := config.InteractionResponseEndpoint
@@ -46,10 +46,10 @@ func Execute(data *models.Interaction) {
 		}
 	}()
 
-	if userVoiceState == nil || userVoiceState.GuildID != data.GuildID || userVoiceState.ChannelID == "" {
+	if userVoiceState == nil || userVoiceState.GuildId != data.GuildId || *userVoiceState.ChannelId == "" {
 		response = util.BuildPlayerResponseData(
 			"Can't play a song :(",
-			fmt.Sprintf("<@%s> not in voice channel", data.Member.User.ID),
+			fmt.Sprintf("<@%s> not in voice channel", data.Member.User.Id),
 			"Error",
 			embed_color.Error,
 		)
@@ -67,14 +67,14 @@ func Execute(data *models.Interaction) {
 		)
 		return
 	}
-	song.RequesterID = data.Member.User.ID
+	song.RequesterId = data.Member.User.Id
 
-	err = voice.StartClient(data.GuildID, userVoiceState.ChannelID)
+	err = voice.StartClient(data.GuildId, *userVoiceState.ChannelId)
 	if err != nil {
 		if err.Error() == "already in a different voice channel" {
 			response = util.BuildPlayerResponseData(
 				"Can't play a song :(",
-				fmt.Sprintf("<@%s> not in the same voice channel as bot", data.Member.User.ID),
+				fmt.Sprintf("<@%s> not in the same voice channel as bot", data.Member.User.Id),
 				"Error",
 				embed_color.Error,
 			)
@@ -87,7 +87,7 @@ func Execute(data *models.Interaction) {
 				"Error",
 				embed_color.Error,
 			)
-			err := voice.StopClient(data.GuildID)
+			err := voice.StopClient(data.GuildId)
 			if err != nil {
 				log.Println(err)
 			}
@@ -95,18 +95,18 @@ func Execute(data *models.Interaction) {
 		}
 	}
 	log.Println("Starting client", song)
-	queueSize := voice.AppendSongToSongQueue(data.GuildID, song)
+	queueSize := voice.AppendSongToSongQueue(data.GuildId, song)
 	if queueSize == 1 {
 		response = util.BuildPlayerResponseData(
 			"Play a song",
-			fmt.Sprintf("Playing %s\nrequested by <@%s>", song.Title, data.Member.User.ID),
+			fmt.Sprintf("Playing %s\nrequested by <@%s>", song.Title, data.Member.User.Id),
 			"Playing",
 			embed_color.Playing,
 		)
 	} else {
 		response = util.BuildPlayerResponseData(
 			"Play a song",
-			fmt.Sprintf("Added %s\nrequested by <@%s> to queue", song.Title, data.Member.User.ID),
+			fmt.Sprintf("Added %s\nrequested by <@%s> to queue", song.Title, data.Member.User.Id),
 			fmt.Sprintf("#%d in queue", queueSize),
 			embed_color.Playing,
 		)

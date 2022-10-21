@@ -1,22 +1,22 @@
 package repo
 
 import (
-	"bothoi/models"
+	"bothoi/models/discord_models"
 	"sync"
 )
 
 var sessionState struct {
 	sync.RWMutex
-	state *models.SessionState
+	state *discord_models.ReadyEvent
 }
 
-func AddSessionState(state *models.SessionState) {
+func AddSessionState(state *discord_models.ReadyEvent) {
 	sessionState.Lock()
 	sessionState.state = state
 	sessionState.Unlock()
 }
 
-func GetSessionState() *models.SessionState {
+func GetSessionState() *discord_models.ReadyEvent {
 	sessionState.RLock()
 	defer sessionState.RUnlock()
 	return sessionState.state
