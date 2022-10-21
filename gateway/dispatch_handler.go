@@ -50,7 +50,7 @@ func dispatchHandler(payload models.GatewayPayload) {
 		}
 		states.AddVoiceStateBulk(voiceStates)
 	case "VOICE_STATE_UPDATE":
-		var data *models.VoiceState = new(models.VoiceState)
+		var data = new(models.VoiceState)
 		err := mapstructure.Decode(payload.D, data)
 		if err != nil {
 			log.Println(err)

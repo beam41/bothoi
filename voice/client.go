@@ -23,7 +23,7 @@ import (
 	"golang.org/x/crypto/nacl/secretbox"
 )
 
-type VoiceClient struct {
+type VClient struct {
 	sync.RWMutex
 	ctx                context.Context
 	ctxCancel          context.CancelFunc
@@ -60,7 +60,7 @@ func StartClient(guildID, channelID string) error {
 		client.RLock()
 		defer client.RUnlock()
 		if (client.voiceChannelID != "") && (client.voiceChannelID != channelID) {
-			return errors.New("Already in a different voice channel")
+			return errors.New("already in a different voice channel")
 		} else if client.running {
 			return nil
 		}
@@ -94,17 +94,20 @@ func StopClient(guildID string) error {
 	if err != nil {
 		return err
 	}
-	leaveVoiceChannel(guildID)
+	err = leaveVoiceChannel(guildID)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
-func (client *VoiceClient) connWriteJSON(v any) (err error) {
+func (client *VClient) connWriteJSON(v any) (err error) {
 	log.Println("outgoing voice: ", v)
 	err = client.c.WriteJSON(v)
 	return
 }
 
-func (client *VoiceClient) connect() {
+func (client *VClient) connect() {
 	// only connect once
 	client.Lock()
 	if client.running {
@@ -119,9 +122,17 @@ func (client *VoiceClient) connect() {
 		log.Fatalln(err)
 	}
 	client.c = c
-	defer c.Close()
+	defer func(c *websocket.Conn) {
+		err := c.Close()
+		if err != nil {
+			log.Println(err)
+		}
+	}(c)
 
-	client.connWriteJSON(models.NewVoiceIdentify(client.guildID, config.BOT_ID, *client.sessionID, client.voiceServer.Token))
+	err = client.connWriteJSON(models.NewVoiceIdentify(client.guildID, config.BOT_ID, *client.sessionID, client.voiceServer.Token))
+	if err != nil {
+		log.Println(err)
+	}
 
 	heatbeatInterval := make(chan int)
 	heatbeatAcked := make(chan int64)
@@ -153,7 +164,11 @@ func (client *VoiceClient) connect() {
 				heatbeatAcked <- n
 			case voice_opcode.Ready:
 				var data models.UDPInfo
-				mapstructure.Decode(payload.D, &data)
+				err := mapstructure.Decode(payload.D, &data)
+				if err != nil {
+					log.Println(err)
+					continue
+				}
 				if !util.ContainsStr(data.Modes, config.PREFERRED_MODE) {
 					log.Panicln("Preferred mode not available")
 				}
@@ -163,7 +178,11 @@ func (client *VoiceClient) connect() {
 				go client.sendSongFromFrameData()
 			case voice_opcode.SessionDescription:
 				var data models.SessionDescription
-				mapstructure.Decode(payload.D, &data)
+				err := mapstructure.Decode(payload.D, &data)
+				if err != nil {
+					log.Println(err)
+					continue
+				}
 				client.sessionDescription = &data
 				client.udpReadyWait.L.Lock()
 				client.udpReady = true
@@ -185,32 +204,49 @@ func (client *VoiceClient) connect() {
 		}
 		prevNonce = randNum.Int64()
 
-		client.connWriteJSON(models.NewVoiceHeartbeat(prevNonce))
-
+		err = client.connWriteJSON(models.NewVoiceHeartbeat(prevNonce))
+		if err != nil {
+			log.Println(err)
+		}
 		select {
 		case hbNonce := <-heatbeatAcked:
 			if prevNonce != hbNonce {
 				// handle nonce error
 				log.Println(client.guildID, "Nonce invalid")
-				StopClient(client.guildID)
-				c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(4006, ""))
+				err := StopClient(client.guildID)
+				if err != nil {
+					log.Println(err)
+				}
+				err = c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(4006, ""))
+				if err != nil {
+					log.Println(err)
+				}
 				return
 			}
 		case <-time.After(time.Duration(interval) * time.Millisecond):
 			// uh oh timeout, goodbye
 			log.Println(client.guildID, "Timeout")
-			StopClient(client.guildID)
-			c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(4009, ""))
+			err := StopClient(client.guildID)
+			if err != nil {
+				log.Println(err)
+			}
+			err = c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(4009, ""))
+			if err != nil {
+				log.Println(err)
+			}
 			return
 		case <-client.ctx.Done():
 			log.Println(client.guildID, "Done")
-			c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(1000, ""))
+			err := c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(1000, ""))
+			if err != nil {
+				log.Println(err)
+			}
 			return
 		}
 	}
 }
 
-func (client *VoiceClient) connectUdp() {
+func (client *VClient) connectUdp() {
 	raddr, err := net.ResolveUDPAddr("udp", client.udpInfo.IP+":"+strconv.Itoa(int(client.udpInfo.Port)))
 	if err != nil {
 		log.Println(err)
@@ -223,12 +259,15 @@ func (client *VoiceClient) connectUdp() {
 	}
 	client.uc = conn
 	ip, port := client.performIpDiscovery()
-	client.connWriteJSON(models.NewVoiceSelectProtocol(ip, port, config.PREFERRED_MODE))
+	err = client.connWriteJSON(models.NewVoiceSelectProtocol(ip, port, config.PREFERRED_MODE))
+	if err != nil {
+		log.Println(err)
+	}
 
 	go client.keepAlive(time.Second * 5)
 }
 
-func (client *VoiceClient) performIpDiscovery() (ip string, port uint16) {
+func (client *VClient) performIpDiscovery() (ip string, port uint16) {
 	send := make([]byte, 70)
 
 	binary.BigEndian.PutUint32(send, client.udpInfo.SSRC)
@@ -259,8 +298,13 @@ func (client *VoiceClient) performIpDiscovery() (ip string, port uint16) {
 	return
 }
 
-func (client *VoiceClient) keepAlive(i time.Duration) {
-	defer client.uc.Close()
+func (client *VClient) keepAlive(i time.Duration) {
+	defer func(uc *net.UDPConn) {
+		err := uc.Close()
+		if err != nil {
+			log.Println(err)
+		}
+	}(client.uc)
 
 	var sequence uint64
 
@@ -288,7 +332,7 @@ func (client *VoiceClient) keepAlive(i time.Duration) {
 	}
 }
 
-func (client *VoiceClient) sendSongFromFrameData() {
+func (client *VClient) sendSongFromFrameData() {
 	client.udpReadyWait.L.Lock()
 	for !client.udpReady {
 		client.udpReadyWait.Wait()
@@ -300,7 +344,10 @@ func (client *VoiceClient) sendSongFromFrameData() {
 
 	client.RLock()
 	if !client.speaking {
-		client.connWriteJSON(models.NewVoiceSpeaking(client.udpInfo.SSRC))
+		err := client.connWriteJSON(models.NewVoiceSpeaking(client.udpInfo.SSRC))
+		if err != nil {
+			log.Println(err)
+		}
 	}
 	client.RUnlock()
 
@@ -324,7 +371,7 @@ func (client *VoiceClient) sendSongFromFrameData() {
 	binary.BigEndian.PutUint32(header[8:], client.udpInfo.SSRC)
 
 	for {
-		binary.BigEndian.PutUint16(header[2:], uint16(sequenceNumber))
+		binary.BigEndian.PutUint16(header[2:], sequenceNumber)
 		binary.BigEndian.PutUint32(header[4:], timeStamp)
 
 		copy(nonce[:], header)
@@ -368,7 +415,7 @@ func (client *VoiceClient) sendSongFromFrameData() {
 	}
 }
 
-func (client *VoiceClient) waitForExit() {
+func (client *VClient) waitForExit() {
 	client.RLock()
 	if client.isWaitForExit == true {
 		client.stopWaitForExit <- struct{}{}
@@ -386,7 +433,10 @@ func (client *VoiceClient) waitForExit() {
 		if client.running {
 			client.RUnlock()
 			log.Println(client.guildID, "Idle Timeout")
-			StopClient(client.guildID)
+			err := StopClient(client.guildID)
+			if err != nil {
+				log.Println(err)
+			}
 		} else {
 			client.RUnlock()
 			return

@@ -40,8 +40,7 @@ func Post(url string, body *bytes.Buffer, header map[string]string) ([]byte, err
 	}
 
 	resBody, err := io.ReadAll(res.Body)
-	res.Body.Close()
-
+	err = res.Body.Close()
 	if err != nil {
 		return nil, err
 	}

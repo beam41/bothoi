@@ -5,7 +5,8 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"os/exec"
@@ -57,8 +58,13 @@ func DownloadYt(ytID string) ([]byte, error) {
 			if err != nil {
 				fmt.Println(err)
 			}
-			defer resp.Body.Close()
-			body, err := ioutil.ReadAll(resp.Body)
+			defer func(body io.ReadCloser) {
+				err := body.Close()
+				if err != nil {
+					log.Println(err)
+				}
+			}(resp.Body)
+			body, err := io.ReadAll(resp.Body)
 			if err != nil {
 				fmt.Println(err)
 			}
@@ -110,11 +116,11 @@ func SearchYt(searchStr string) (models.SongItem, error) {
 	}
 	output := strings.TrimSpace(stdout.String())
 	if output == "" {
-		return models.SongItem{}, errors.New("No results found")
+		return models.SongItem{}, errors.New("no results found")
 	}
 	results := strings.Split(output, "\n")
 	if len(results) < 3 {
-		return models.SongItem{}, errors.New("No results found")
+		return models.SongItem{}, errors.New("no results found")
 	}
 	return models.SongItem{
 		Title:       results[0],

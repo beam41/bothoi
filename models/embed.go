@@ -32,10 +32,10 @@ type EmbedImage struct {
 }
 
 type EmbedThumbnail struct {
-	Url       string `json:"url" mapstructure:"url"`
-	Proxy_url string `json:"proxy_url,omitempty" mapstructure:"proxy_url"`
-	Height    int32  `json:"height,omitempty" mapstructure:"height"`
-	Width     int32  `json:"width,omitempty" mapstructure:"width"`
+	Url      string `json:"url" mapstructure:"url"`
+	ProxyUrl string `json:"proxy_url,omitempty" mapstructure:"proxy_url"`
+	Height   int32  `json:"height,omitempty" mapstructure:"height"`
+	Width    int32  `json:"width,omitempty" mapstructure:"width"`
 }
 
 type EmbedVideo struct {

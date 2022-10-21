@@ -71,7 +71,7 @@ func Execute(data *models.Interaction) {
 
 	err = voice.StartClient(data.GuildID, userVoiceState.ChannelID)
 	if err != nil {
-		if err.Error() == "Already in a different voice channel" {
+		if err.Error() == "already in a different voice channel" {
 			response = util.BuildPlayerResponseData(
 				"Can't play a song :(",
 				fmt.Sprintf("<@%s> not in the same voice channel as bot", data.Member.User.ID),

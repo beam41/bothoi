@@ -10,20 +10,20 @@ import (
 
 type voiceClientT struct {
 	sync.RWMutex
-	c map[string]*VoiceClient
+	c map[string]*VClient
 }
 
 var clientList = &voiceClientT{
-	c: map[string]*VoiceClient{},
+	c: map[string]*VClient{},
 }
 
-func addGuildToClient(guildID, voiceChannelId string) *VoiceClient {
+func addGuildToClient(guildID, voiceChannelId string) *VClient {
 	if clientList.c[guildID] != nil {
 		return clientList.c[guildID]
 	}
 	clientList.Lock()
 	ctx, cancel := context.WithCancel(context.Background())
-	clientList.c[guildID] = &VoiceClient{
+	clientList.c[guildID] = &VClient{
 		guildID:         guildID,
 		voiceChannelID:  voiceChannelId,
 		songQueue:       []*models.SongItemWData{},
@@ -65,7 +65,7 @@ func removeClient(guildID string) error {
 	defer clientList.Unlock()
 	var client = clientList.c[guildID]
 	if client == nil {
-		return errors.New("Client not found")
+		return errors.New("client not found")
 	}
 	client.Lock()
 	defer client.Unlock()
@@ -113,7 +113,7 @@ func PauseClient(guildID string) (bool, error) {
 	defer clientList.Unlock()
 	var client = clientList.c[guildID]
 	if client == nil {
-		return false, errors.New("Client not found")
+		return false, errors.New("client not found")
 	}
 	client.RLock()
 	defer client.RUnlock()
@@ -132,7 +132,7 @@ func SkipSong(guildID string) error {
 	defer clientList.Unlock()
 	var client = clientList.c[guildID]
 	if client == nil {
-		return errors.New("Client not found")
+		return errors.New("client not found")
 	}
 	client.RLock()
 	defer client.RUnlock()
