@@ -19,7 +19,7 @@ func Execute(data *models.Interaction) {
 	userVoiceState := states.GetVoiceState(data.Member.User.ID)
 
 	// post waiting prevent response timeout
-	url := config.INTERACTION_RESPONSE_ENDPOINT
+	url := config.InteractionResponseEndpoint
 	url = strings.Replace(url, "<interaction_id>", data.ID, 1)
 	url = strings.Replace(url, "<interaction_token>", data.Token, 1)
 
@@ -36,8 +36,8 @@ func Execute(data *models.Interaction) {
 	var response models.InteractionResponseData
 	// do response to interaction
 	defer func() {
-		url := config.INTERACTION_RESPONSE_EDIT_ENDPOINT
-		url = strings.Replace(url, "<application_id>", config.BOT_ID, 1)
+		url := config.InteractionResponseEndpoint
+		url = strings.Replace(url, "<application_id>", config.BotId, 1)
 		url = strings.Replace(url, "<interaction_token>", data.Token, 1)
 
 		_, err := http_util.PatchJson(url, response)

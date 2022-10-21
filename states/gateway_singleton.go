@@ -10,7 +10,7 @@ import (
 var conn *websocket.Conn
 
 func StartGatewayConn() {
-	c, _, err := websocket.DefaultDialer.Dial(config.GATEWAY_URL, nil)
+	c, _, err := websocket.DefaultDialer.Dial(config.GatewayUrl, nil)
 	conn = c
 	if err != nil {
 		log.Fatalln(err)

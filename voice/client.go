@@ -117,7 +117,7 @@ func (client *VClient) connect() {
 	client.running = true
 	client.Unlock()
 
-	c, _, err := websocket.DefaultDialer.Dial("wss://"+client.voiceServer.Endpoint+"?v="+config.VOICE_GATEWAY_VERSION, nil)
+	c, _, err := websocket.DefaultDialer.Dial("wss://"+client.voiceServer.Endpoint+"?v="+config.VoiceGatewayVersion, nil)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -129,7 +129,7 @@ func (client *VClient) connect() {
 		}
 	}(c)
 
-	err = client.connWriteJSON(models.NewVoiceIdentify(client.guildID, config.BOT_ID, *client.sessionID, client.voiceServer.Token))
+	err = client.connWriteJSON(models.NewVoiceIdentify(client.guildID, config.BotId, *client.sessionID, client.voiceServer.Token))
 	if err != nil {
 		log.Println(err)
 	}
@@ -150,7 +150,7 @@ func (client *VClient) connect() {
 				client.RUnlock()
 				return
 			}
-			if config.DEVELOPMENT {
+			if config.Development {
 				jsonDat, _ := json.Marshal(payload)
 				log.Println("incoming voice: ", payload, string(jsonDat))
 			} else {
@@ -169,7 +169,7 @@ func (client *VClient) connect() {
 					log.Println(err)
 					continue
 				}
-				if !util.ContainsStr(data.Modes, config.PREFERRED_MODE) {
+				if !util.ContainsStr(data.Modes, config.PreferredMode) {
 					log.Panicln("Preferred mode not available")
 				}
 				client.udpInfo = &data
@@ -259,7 +259,7 @@ func (client *VClient) connectUdp() {
 	}
 	client.uc = conn
 	ip, port := client.performIpDiscovery()
-	err = client.connWriteJSON(models.NewVoiceSelectProtocol(ip, port, config.PREFERRED_MODE))
+	err = client.connWriteJSON(models.NewVoiceSelectProtocol(ip, port, config.PreferredMode))
 	if err != nil {
 		log.Println(err)
 	}
@@ -339,8 +339,8 @@ func (client *VClient) sendSongFromFrameData() {
 	}
 	client.udpReadyWait.L.Unlock()
 
-	frameTime := uint32(config.DCA_FRAMERATE * config.DCA_FRAMEDURATION / 1000)
-	ticker := time.NewTicker(time.Millisecond * time.Duration(config.DCA_FRAMEDURATION))
+	frameTime := uint32(config.DcaFramerate * config.DcaFrameduration / 1000)
+	ticker := time.NewTicker(time.Millisecond * time.Duration(config.DcaFrameduration))
 
 	client.RLock()
 	if !client.speaking {
@@ -428,7 +428,7 @@ func (client *VClient) waitForExit() {
 		return
 	case <-client.ctx.Done():
 		return
-	case <-time.After(config.IDLE_TIMEOUT):
+	case <-time.After(config.IdleTimeout):
 		client.RLock()
 		if client.running {
 			client.RUnlock()

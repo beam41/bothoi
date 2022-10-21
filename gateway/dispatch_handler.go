@@ -56,7 +56,7 @@ func dispatchHandler(payload models.GatewayPayload) {
 			log.Println(err)
 			return
 		}
-		if data.UserID != config.BOT_ID {
+		if data.UserID != config.BotId {
 			states.AddVoiceState(data)
 		} else {
 			voice.ReturnSessionId(data.GuildID, data.SessionID)

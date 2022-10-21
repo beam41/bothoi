@@ -22,7 +22,7 @@ var ExecutorList = map[string]func(*models.Interaction){
 }
 
 func Register() {
-	if config.NO_COMMAND_REGISTER {
+	if config.NoCommandRegister {
 		return
 	}
 	var commandList = []models.AppCommand{
@@ -36,17 +36,17 @@ func Register() {
 	for _, command := range commandList {
 		log.Println("app command request: ", command)
 		header := map[string]string{}
-		header["Authorization"] = "Bot " + config.BOT_TOKEN
+		header["Authorization"] = "Bot " + config.BotToken
 
-		if config.DEVELOPMENT {
-			res, errD := http_util.PostJsonH(config.APP_COMMAND_GUILD_ENDPOINT, command, header)
+		if config.Development {
+			res, errD := http_util.PostJsonH(config.AppCommandEndpoint, command, header)
 			log.Println("guild command response: ", string(res))
 			if errD != nil {
 				log.Println(errD)
 				continue
 			}
 		}
-		res, err := http_util.PostJsonH(config.APP_COMMAND_ENDPOINT, command, header)
+		res, err := http_util.PostJsonH(config.AppCommandEndpoint, command, header)
 
 		if err != nil {
 			log.Println(err)

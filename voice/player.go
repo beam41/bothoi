@@ -29,8 +29,8 @@ func (client *VClient) play() {
 	// encode settings
 	options := dca.StdEncodeOptions
 	options.Volume = 128
-	options.FrameRate = config.DCA_FRAMERATE
-	options.FrameDuration = config.DCA_FRAMEDURATION
+	options.FrameRate = config.DcaFramerate
+	options.FrameDuration = config.DcaFrameduration
 	options.RawOutput = true
 	options.Bitrate = 96
 	options.Application = "audio"

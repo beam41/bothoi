@@ -57,7 +57,7 @@ func connection(isResume bool) {
 				}
 				continue
 			}
-			if config.DEVELOPMENT {
+			if config.Development {
 				jsonDat, _ := json.Marshal(payload)
 				log.Println("incoming: ", payload, string(jsonDat))
 			} else {

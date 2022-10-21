@@ -32,8 +32,8 @@ func NewIdentify() GatewayPayload {
 	return GatewayPayload{
 		Op: gateway_opcode.Identify,
 		D: map[string]any{
-			"token":   config.BOT_TOKEN,
-			"intents": config.GATEWAY_INTENT,
+			"token":   config.BotToken,
+			"intents": config.GatewayIntent,
 			"properties": map[string]any{
 				"$os":      "linux",
 				"$browser": "bothoi",
@@ -48,7 +48,7 @@ func NewResume(s *uint64, sessionId string) GatewayPayload {
 	return GatewayPayload{
 		Op: gateway_opcode.Resume,
 		D: map[string]any{
-			"token":      config.BOT_TOKEN,
+			"token":      config.BotToken,
 			"session_id": sessionId,
 			"seq":        s,
 		},

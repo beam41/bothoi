@@ -17,7 +17,7 @@ func Execute(data *models.Interaction) {
 	var response models.InteractionResponse
 	// do response to interaction
 	defer func() {
-		url := config.INTERACTION_RESPONSE_ENDPOINT
+		url := config.InteractionResponseEndpoint
 		url = strings.Replace(url, "<interaction_id>", data.ID, 1)
 		url = strings.Replace(url, "<interaction_token>", data.Token, 1)
 
