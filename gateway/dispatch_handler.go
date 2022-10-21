@@ -3,6 +3,7 @@ package gateway
 import (
 	"bothoi/commands"
 	"bothoi/config"
+	"bothoi/global"
 	"bothoi/models/discord_models"
 	"bothoi/repo"
 	"bothoi/voice"
@@ -25,7 +26,7 @@ func dispatchHandler(payload discord_models.GatewayPayload) {
 			log.Println(err)
 			return
 		}
-		repo.AddSessionState(&sessionState)
+		global.AddGatewaySession(&sessionState)
 	case "INTERACTION_CREATE":
 		var data discord_models.Interaction
 		err := mapstructure.Decode(payload.D, &data)
@@ -35,7 +36,7 @@ func dispatchHandler(payload discord_models.GatewayPayload) {
 		}
 		mapInteractionExecute(&data)
 	case "GUILD_CREATE":
-		var data discord_models.Guild
+		var data discord_models.GuildCreate
 		err := mapstructure.Decode(payload.D, &data)
 		if err != nil {
 			log.Println(err)

@@ -45,9 +45,10 @@ type Guild struct {
 	NsfwLevel                   uint8            `json:"nsfw_level" mapstructure:"nsfw_level"`
 	Stickers                    []Sticker        `json:"stickers" mapstructure:"stickers"`
 	PremiumProgressBarEnabled   bool             `json:"premium_progress_bar_enabled" mapstructure:"premium_progress_bar_enabled"`
+}
 
-	// Guild Create Extra Fields
-
+type GuildCreate struct {
+	Guild                `mapstructure:",squash"`
 	JoinedAt             types.ISOTimeStamp    `json:"joined_at" mapstructure:"joined_at"`
 	Large                bool                  `json:"large" mapstructure:"large"`
 	Unavailable          bool                  `json:"unavailable" mapstructure:"unavailable"`

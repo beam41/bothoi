@@ -2,6 +2,7 @@ package global
 
 import (
 	"bothoi/config"
+	"bothoi/models/discord_models"
 	"github.com/gorilla/websocket"
 	"log"
 	"sync"
@@ -63,4 +64,21 @@ func SetSequenceNumber(n *uint64) {
 	sequenceNumber.Lock()
 	sequenceNumber.n = n
 	sequenceNumber.Unlock()
+}
+
+var gatewaySession struct {
+	sync.RWMutex
+	state *discord_models.ReadyEvent
+}
+
+func AddGatewaySession(state *discord_models.ReadyEvent) {
+	gatewaySession.Lock()
+	gatewaySession.state = state
+	gatewaySession.Unlock()
+}
+
+func GetGatewaySession() *discord_models.ReadyEvent {
+	gatewaySession.RLock()
+	defer gatewaySession.RUnlock()
+	return gatewaySession.state
 }

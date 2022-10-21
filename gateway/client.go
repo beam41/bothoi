@@ -5,7 +5,6 @@ import (
 	"bothoi/global"
 	"bothoi/models/discord_models"
 	"bothoi/references/gateway_opcode"
-	"bothoi/repo"
 	"encoding/json"
 	"log"
 	"math/rand"
@@ -32,7 +31,7 @@ func connection(isResume bool) {
 			log.Println(err)
 		}
 	} else {
-		err := global.GatewayConnWriteJSON(discord_models.NewResume(global.GetSequenceNumber(), repo.GetSessionState().SessionId))
+		err := global.GatewayConnWriteJSON(discord_models.NewResume(global.GetSequenceNumber(), global.GetGatewaySession().SessionId))
 		if err != nil {
 			log.Println(err)
 		}
