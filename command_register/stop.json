@@ -1,0 +1,6 @@
+{
+  "type": 1,
+  "name": "stop",
+  "description": "Stop the player and leave the voice channel",
+  "default_permission": true
+}

@@ -5,7 +5,7 @@ import "bothoi/models/types"
 type Interaction struct {
 	Id            types.Snowflake `json:"id" mapstructure:"id"`
 	ApplicationId types.Snowflake `json:"application_id" mapstructure:"application_id"`
-	Type          uint8           `json:"types" mapstructure:"types"`
+	Type          uint8           `json:"type" mapstructure:"type"`
 	Data          InteractionData `json:"data" mapstructure:"data"`
 	GuildId       types.Snowflake `json:"guild_id" mapstructure:"guild_id"`
 	ChannelId     types.Snowflake `json:"channel_id" mapstructure:"channel_id"`
@@ -20,11 +20,11 @@ type InteractionData struct {
 	Id      types.Snowflake     `json:"id" mapstructure:"id"`
 	Name    string              `json:"name" mapstructure:"name"`
 	Options []InteractionOption `json:"options" mapstructure:"options"`
-	Type    uint8               `json:"types" mapstructure:"types"`
+	Type    uint8               `json:"type" mapstructure:"type"`
 }
 
 type InteractionOption struct {
 	Name  string `json:"name" mapstructure:"name"`
-	Type  uint8  `json:"types" mapstructure:"types"`
+	Type  uint8  `json:"type" mapstructure:"type"`
 	Value any    `json:"value" mapstructure:"value"`
 }

@@ -12,6 +12,5 @@ func main() {
 	voiceClientManager := voice.NewClientManager()
 	commandManager := command.NewCommandManager()
 	bh_context.SetCtx(gatewayClient, voiceClientManager, commandManager)
-	bh_context.GetCommandManager().Register()
-	bh_context.GetGatewayClient().Connect()
+	gatewayClient.Connect()
 }

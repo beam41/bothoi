@@ -1,0 +1,6 @@
+{
+  "type": 1,
+  "name": "queue",
+  "description": "List the music player queue",
+  "default_permission": true
+}

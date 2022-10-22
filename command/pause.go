@@ -4,7 +4,6 @@ import (
 	"bothoi/bh_context"
 	"bothoi/config"
 	"bothoi/models/discord_models"
-	"bothoi/references/app_command_type"
 	"bothoi/references/embed_color"
 	"bothoi/repo"
 	"bothoi/util"
@@ -14,20 +13,8 @@ import (
 	"strings"
 )
 
-var commandPause = []discord_models.AppCommand{
-	{
-		Type:              app_command_type.ChatInput,
-		Name:              "pause",
-		Description:       "Pause/Resume the player",
-		DefaultPermission: true,
-	},
-	{
-		Type:              app_command_type.ChatInput,
-		Name:              "resume",
-		Description:       "Pause/Resume the player",
-		DefaultPermission: true,
-	},
-}
+const commandPause0 = "pause"
+const commandPause1 = "resume"
 
 func executePause(data *discord_models.Interaction) {
 	var response discord_models.InteractionResponse

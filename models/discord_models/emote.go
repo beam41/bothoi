@@ -19,7 +19,7 @@ type Sticker struct {
 	Name        string          `json:"name" mapstructure:"name"`
 	Description *string         `json:"description" mapstructure:"description"`
 	Tags        *string         `json:"tags" mapstructure:"tags"`
-	Type        uint8           `json:"types" mapstructure:"types"`
+	Type        uint8           `json:"type" mapstructure:"type"`
 	FormatType  uint8           `json:"format_type" mapstructure:"format_type"`
 	Available   bool            `json:"available" mapstructure:"available"`
 	GuildId     types.Snowflake `json:"guild_id" mapstructure:"guild_id"`

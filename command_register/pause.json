@@ -1,0 +1,6 @@
+{
+  "type": 1,
+  "name": "pause",
+  "description": "Pause/Resume the player",
+  "default_permission": true
+}

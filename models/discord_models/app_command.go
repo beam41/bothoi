@@ -6,7 +6,7 @@ import (
 )
 
 type AppCommand struct {
-	Type              app_command_type.AppCommandType `json:"types" mapstructure:"types"`
+	Type              app_command_type.AppCommandType `json:"type" mapstructure:"type"`
 	Name              string                          `json:"name" mapstructure:"name"`
 	Description       string                          `json:"description" mapstructure:"description"`
 	DefaultPermission bool                            `json:"default_permission" mapstructure:"default_permission"`
@@ -14,7 +14,7 @@ type AppCommand struct {
 }
 
 type AppCommandOption struct {
-	Type        app_command_option_type.AppCommandOptionType `json:"types" mapstructure:"types"`
+	Type        app_command_option_type.AppCommandOptionType `json:"type" mapstructure:"type"`
 	Name        string                                       `json:"name" mapstructure:"name"`
 	Description string                                       `json:"description" mapstructure:"description"`
 	Required    bool                                         `json:"required" mapstructure:"required"`

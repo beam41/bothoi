@@ -4,7 +4,6 @@ import (
 	"bothoi/bh_context"
 	"bothoi/config"
 	"bothoi/models/discord_models"
-	"bothoi/references/app_command_type"
 	"bothoi/references/embed_color"
 	"bothoi/util"
 	"bothoi/util/http_util"
@@ -13,12 +12,7 @@ import (
 	"strings"
 )
 
-var commandQueue = discord_models.AppCommand{
-	Type:              app_command_type.ChatInput,
-	Name:              "queue",
-	Description:       "List the music player queue",
-	DefaultPermission: true,
-}
+const commandQueue = "queue"
 
 func executeQueue(data *discord_models.Interaction) {
 	var response discord_models.InteractionResponse

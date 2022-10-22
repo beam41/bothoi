@@ -1,0 +1,6 @@
+{
+  "type": 1,
+  "name": "skip",
+  "description": "Skip song in the player",
+  "default_permission": true
+}

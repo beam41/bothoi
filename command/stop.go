@@ -4,7 +4,6 @@ import (
 	"bothoi/bh_context"
 	"bothoi/config"
 	"bothoi/models/discord_models"
-	"bothoi/references/app_command_type"
 	"bothoi/references/embed_color"
 	"bothoi/repo"
 	"bothoi/util"
@@ -14,12 +13,7 @@ import (
 	"strings"
 )
 
-var commandStop = discord_models.AppCommand{
-	Type:              app_command_type.ChatInput,
-	Name:              "stop",
-	Description:       "Stop the player and leave the voice channel",
-	DefaultPermission: true,
-}
+const commandStop = "stop"
 
 func executeStop(data *discord_models.Interaction) {
 	var response discord_models.InteractionResponse

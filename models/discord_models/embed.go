@@ -6,7 +6,7 @@ import (
 
 type Embed struct {
 	Title       string              `json:"title,omitempty" mapstructure:"title"`
-	Type        string              `json:"types,omitempty" mapstructure:"types"`
+	Type        string              `json:"type,omitempty" mapstructure:"type"`
 	Description string              `json:"description,omitempty" mapstructure:"description"`
 	Url         string              `json:"url,omitempty" mapstructure:"url"`
 	Timestamp   *types.ISOTimeStamp `json:"timestamp,omitempty" mapstructure:"timestamp"`
