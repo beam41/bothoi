@@ -4,7 +4,8 @@ WORKDIR /usr/src/bothoi
 
 RUN mkdir app
 
-RUN apt-get update && apt-get install -y curl
+RUN apt-get update && apt-get install -y curl gcc
+RUN apt-get clean
 RUN curl -L https://yt-dl.org/downloads/latest/youtube-dl -o /usr/local/bin/youtube-dl
 
 COPY go.mod go.sum ./
