@@ -5,18 +5,15 @@ import (
 	"bothoi/config"
 	"bothoi/models/discord_models"
 	"bothoi/util/http_util"
-	"bothoi/voice/voice_interface"
 	"log"
 )
 
 type commandManager struct {
-	executorList       map[string]func(*commandManager, *discord_models.Interaction)
-	voiceClientManager voice_interface.ClientManagerInterface
+	executorList map[string]func(*commandManager, *discord_models.Interaction)
 }
 
-func NewCommandManager(voiceClientManager voice_interface.ClientManagerInterface) command_interface.CommandManagerInterface {
+func NewCommandManager() command_interface.CommandManagerInterface {
 	return &commandManager{
-		voiceClientManager: voiceClientManager,
 		executorList: map[string]func(*commandManager, *discord_models.Interaction){
 			commandPlay.Name:     executePlay,
 			commandQueue.Name:    executeQueue,

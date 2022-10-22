@@ -37,7 +37,7 @@ func Patch(url string, body *bytes.Buffer, header map[string]string) ([]byte, er
 	if err != nil {
 		return nil, err
 	}
-	log.Println("StatusCode", res.StatusCode)
+	log.Println("Patch StatusCode", res.StatusCode)
 	resBody, err := io.ReadAll(res.Body)
 	err = res.Body.Close()
 	if err != nil {

@@ -1,6 +1,7 @@
 package command
 
 import (
+	"bothoi/bh_context"
 	"bothoi/config"
 	"bothoi/models/discord_models"
 	"bothoi/references/app_command_option_type"
@@ -52,7 +53,7 @@ func executePlay(cm *commandManager, data *discord_models.Interaction) {
 	var response discord_models.InteractionCallbackData
 	// do response to interaction
 	defer func() {
-		url := config.InteractionResponseEndpoint
+		url := config.InteractionResponseEditEndpoint
 		url = strings.Replace(url, "<application_id>", config.BotId, 1)
 		url = strings.Replace(url, "<interaction_token>", data.Token, 1)
 
@@ -85,7 +86,7 @@ func executePlay(cm *commandManager, data *discord_models.Interaction) {
 	}
 	song.RequesterId = data.Member.User.Id
 
-	err = cm.voiceClientManager.StartClient(data.GuildId, *userVoiceState.ChannelId)
+	err = bh_context.Ctx.VoiceClientManager.StartClient(data.GuildId, *userVoiceState.ChannelId)
 	if err != nil {
 		if err.Error() == "already in a different voice channel" {
 			response = util.BuildPlayerResponseData(
@@ -103,7 +104,7 @@ func executePlay(cm *commandManager, data *discord_models.Interaction) {
 				"Error",
 				embed_color.Error,
 			)
-			err := cm.voiceClientManager.StopClient(data.GuildId)
+			err := bh_context.Ctx.VoiceClientManager.StopClient(data.GuildId)
 			if err != nil {
 				log.Println(err)
 			}
@@ -111,7 +112,7 @@ func executePlay(cm *commandManager, data *discord_models.Interaction) {
 		}
 	}
 	log.Println("Starting client", song)
-	queueSize := cm.voiceClientManager.AppendSongToSongQueue(data.GuildId, song)
+	queueSize := bh_context.Ctx.VoiceClientManager.AppendSongToSongQueue(data.GuildId, song)
 	if queueSize == 1 {
 		response = util.BuildPlayerResponseData(
 			"Play a song",

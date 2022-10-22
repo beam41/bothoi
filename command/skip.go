@@ -1,6 +1,7 @@
 package command
 
 import (
+	"bothoi/bh_context"
 	"bothoi/config"
 	"bothoi/models/discord_models"
 	"bothoi/references/app_command_type"
@@ -34,7 +35,7 @@ func executeSkip(cm *commandManager, data *discord_models.Interaction) {
 		}
 	}()
 	userVoiceState := repo.GetVoiceState(data.Member.User.Id)
-	clientVoiceChannel := cm.voiceClientManager.GetVoiceChannelId(data.GuildId)
+	clientVoiceChannel := bh_context.Ctx.VoiceClientManager.GetVoiceChannelId(data.GuildId)
 	if userVoiceState == nil || *userVoiceState.ChannelId != clientVoiceChannel {
 		response = util.BuildPlayerResponse(
 			"Skip error",
@@ -44,7 +45,7 @@ func executeSkip(cm *commandManager, data *discord_models.Interaction) {
 		)
 		return
 	}
-	err := cm.voiceClientManager.SkipSong(data.GuildId)
+	err := bh_context.Ctx.VoiceClientManager.SkipSong(data.GuildId)
 	if err != nil {
 		response = util.BuildPlayerResponse(
 			"Skip error",

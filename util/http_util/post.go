@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
+	"log"
 	"net/http"
 )
 
@@ -38,7 +39,7 @@ func Post(url string, body *bytes.Buffer, header map[string]string) ([]byte, err
 	if err != nil {
 		return nil, err
 	}
-
+	log.Println("Post StatusCode", res.StatusCode)
 	resBody, err := io.ReadAll(res.Body)
 	err = res.Body.Close()
 	if err != nil {

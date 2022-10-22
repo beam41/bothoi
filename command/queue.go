@@ -1,6 +1,7 @@
 package command
 
 import (
+	"bothoi/bh_context"
 	"bothoi/config"
 	"bothoi/models/discord_models"
 	"bothoi/references/app_command_type"
@@ -32,7 +33,7 @@ func executeQueue(cm *commandManager, data *discord_models.Interaction) {
 			log.Println(err)
 		}
 	}()
-	var playing, songQ = cm.voiceClientManager.GetSongQueue(data.GuildId, 0, 10)
+	var playing, songQ = bh_context.Ctx.VoiceClientManager.GetSongQueue(data.GuildId, 0, 10)
 	if songQ == nil || len(songQ) == 0 {
 		response = util.BuildPlayerResponse(
 			"No songs in queue",

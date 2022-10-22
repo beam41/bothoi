@@ -1,6 +1,7 @@
 package gateway
 
 import (
+	"bothoi/bh_context"
 	"bothoi/config"
 	"bothoi/models/discord_models"
 	"bothoi/models/types"
@@ -28,7 +29,7 @@ func (client *client) dispatchHandler(payload discord_models.GatewayPayload) {
 			log.Println(err)
 			return
 		}
-		client.command.MapInteractionExecute(&data)
+		bh_context.Ctx.CommandManager.MapInteractionExecute(&data)
 	case "GUILD_CREATE":
 		var data discord_models.GuildCreate
 		err := mapstructure.Decode(payload.D, &data)

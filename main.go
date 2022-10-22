@@ -1,21 +1,16 @@
 package main
 
 import (
+	"bothoi/bh_context"
 	"bothoi/command"
-	"bothoi/command/command_interface"
 	"bothoi/gateway"
-	"bothoi/gateway/gateway_interface"
 	"bothoi/voice"
-	"bothoi/voice/voice_interface"
 )
 
 func main() {
-	var gatewayClient gateway_interface.ClientInterface
-	var voiceClientManager voice_interface.ClientManagerInterface
-	var commandManager command_interface.CommandManagerInterface
-	gatewayClient = gateway.NewClient(commandManager)
-	voiceClientManager = voice.NewClientManager(gatewayClient)
-	commandManager = command.NewCommandManager(voiceClientManager)
-	commandManager.Register()
-	gatewayClient.Connect()
+	bh_context.Ctx.CommandManager = command.NewCommandManager()
+	bh_context.Ctx.GatewayClient = gateway.NewClient()
+	bh_context.Ctx.VoiceClientManager = voice.NewClientManager()
+	bh_context.Ctx.CommandManager.Register()
+	bh_context.Ctx.GatewayClient.Connect()
 }

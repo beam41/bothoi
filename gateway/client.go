@@ -1,7 +1,6 @@
 package gateway
 
 import (
-	"bothoi/command/command_interface"
 	"bothoi/config"
 	"bothoi/gateway/gateway_interface"
 	"bothoi/models/discord_models"
@@ -23,7 +22,6 @@ type voiceInstantiateChan struct {
 
 type client struct {
 	sync.RWMutex
-	command        command_interface.CommandManagerInterface
 	conn           *websocket.Conn
 	sequenceNumber *uint64
 	session        *discord_models.ReadyEvent
@@ -33,9 +31,8 @@ type client struct {
 	}
 }
 
-func NewClient(command command_interface.CommandManagerInterface) gateway_interface.ClientInterface {
+func NewClient() gateway_interface.ClientInterface {
 	return &client{
-		command: command,
 		voiceWaiter: struct {
 			sync.RWMutex
 			list map[types.Snowflake]voiceInstantiateChan
