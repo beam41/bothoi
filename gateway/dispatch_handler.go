@@ -74,7 +74,7 @@ func (client *client) dispatchHandler(payload discord_models.GatewayPayload) {
 
 func (client *client) returnSessionId(guildId types.Snowflake, sessionId string) {
 	client.voiceWaiter.RLock()
-	defer client.voiceWaiter.RLock()
+	defer client.voiceWaiter.RUnlock()
 	if chanMap, ok := client.voiceWaiter.list[guildId]; ok {
 		chanMap.sessionIdChan <- sessionId
 	}
@@ -82,7 +82,7 @@ func (client *client) returnSessionId(guildId types.Snowflake, sessionId string)
 
 func (client *client) returnVoiceServer(guildId types.Snowflake, voiceServer *discord_models.VoiceServer) {
 	client.voiceWaiter.RLock()
-	defer client.voiceWaiter.RLock()
+	defer client.voiceWaiter.RUnlock()
 	if chanMap, ok := client.voiceWaiter.list[guildId]; ok {
 		chanMap.voiceServerChan <- voiceServer
 	}
@@ -95,7 +95,7 @@ func (client *client) JoinVoiceChannelMsg(guildId, channelId types.Snowflake, se
 		return err
 	}
 	client.voiceWaiter.Lock()
-	defer client.voiceWaiter.Lock()
+	defer client.voiceWaiter.Unlock()
 	client.voiceWaiter.list[guildId] = voiceInstantiateChan{sessionIdChan, voiceServerChan}
 	return nil
 }
@@ -112,6 +112,6 @@ func (client *client) LeaveVoiceChannelMsg(guildId types.Snowflake) error {
 
 func (client *client) CleanVoiceInstantiateChan(guildId types.Snowflake) {
 	client.voiceWaiter.Lock()
-	defer client.voiceWaiter.Lock()
+	defer client.voiceWaiter.Unlock()
 	delete(client.voiceWaiter.list, guildId)
 }

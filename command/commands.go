@@ -9,12 +9,12 @@ import (
 )
 
 type commandManager struct {
-	executorList map[string]func(*commandManager, *discord_models.Interaction)
+	executorList map[string]func(*discord_models.Interaction)
 }
 
 func NewCommandManager() command_interface.CommandManagerInterface {
 	return &commandManager{
-		executorList: map[string]func(*commandManager, *discord_models.Interaction){
+		executorList: map[string]func(*discord_models.Interaction){
 			commandPlay.Name:     executePlay,
 			commandQueue.Name:    executeQueue,
 			commandPause[0].Name: executePause,
@@ -27,7 +27,7 @@ func NewCommandManager() command_interface.CommandManagerInterface {
 
 func (cm *commandManager) MapInteractionExecute(data *discord_models.Interaction) {
 	if interaction, ok := cm.executorList[data.Data.Name]; ok {
-		interaction(cm, data)
+		interaction(data)
 	}
 }
 

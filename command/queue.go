@@ -20,7 +20,7 @@ var commandQueue = discord_models.AppCommand{
 	DefaultPermission: true,
 }
 
-func executeQueue(cm *commandManager, data *discord_models.Interaction) {
+func executeQueue(data *discord_models.Interaction) {
 	var response discord_models.InteractionResponse
 	// do response to interaction
 	defer func() {

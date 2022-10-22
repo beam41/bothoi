@@ -31,7 +31,7 @@ var commandPlay = discord_models.AppCommand{
 	},
 }
 
-func executePlay(cm *commandManager, data *discord_models.Interaction) {
+func executePlay(data *discord_models.Interaction) {
 	options := util.MapInteractionOption(data.Data.Options)
 	userVoiceState := repo.GetVoiceState(data.Member.User.Id)
 

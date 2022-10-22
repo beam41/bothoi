@@ -21,7 +21,7 @@ var commandSkip = discord_models.AppCommand{
 	DefaultPermission: true,
 }
 
-func executeSkip(cm *commandManager, data *discord_models.Interaction) {
+func executeSkip(data *discord_models.Interaction) {
 	var response discord_models.InteractionResponse
 	// do response to interaction
 	defer func() {

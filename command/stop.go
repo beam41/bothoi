@@ -21,7 +21,7 @@ var commandStop = discord_models.AppCommand{
 	DefaultPermission: true,
 }
 
-func executeStop(cm *commandManager, data *discord_models.Interaction) {
+func executeStop(data *discord_models.Interaction) {
 	var response discord_models.InteractionResponse
 	// do response to interaction
 	defer func() {

@@ -1,7 +1,7 @@
 package discord_models
 
 type InteractionResponse struct {
-	Type uint8                   `json:"types" mapstructure:"types"`
+	Type uint8                   `json:"type" mapstructure:"type"`
 	Data InteractionCallbackData `json:"data" mapstructure:"data"`
 }
 

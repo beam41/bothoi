@@ -29,7 +29,7 @@ var commandPause = []discord_models.AppCommand{
 	},
 }
 
-func executePause(cm *commandManager, data *discord_models.Interaction) {
+func executePause(data *discord_models.Interaction) {
 	var response discord_models.InteractionResponse
 	// do response to interaction
 	defer func() {
