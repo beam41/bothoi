@@ -21,11 +21,13 @@ type voiceInstantiateChan struct {
 }
 
 type client struct {
-	sync.RWMutex
-	conn           *websocket.Conn
-	sequenceNumber *uint64
-	session        *discord_models.ReadyEvent
-	voiceWaiter    struct {
+	conn *websocket.Conn
+	info struct {
+		sync.RWMutex
+		sequenceNumber *uint64
+		session        *discord_models.ReadyEvent
+	}
+	voiceWaiter struct {
 		sync.RWMutex
 		list map[types.Snowflake]voiceInstantiateChan
 	}
@@ -86,9 +88,9 @@ func (client *client) connection(isResume bool) {
 			log.Println(err)
 		}
 	} else {
-		client.RLock()
-		err := client.gatewayConnWriteJSON(discord_models.NewResume(client.sequenceNumber, client.session.SessionId))
-		client.RUnlock()
+		client.info.RLock()
+		err := client.gatewayConnWriteJSON(discord_models.NewResume(client.info.sequenceNumber, client.info.session.SessionId))
+		client.info.RUnlock()
 		if err != nil {
 			log.Println(err)
 		}
@@ -123,9 +125,9 @@ func (client *client) connection(isResume bool) {
 
 			// log.Println("incoming: ", payload)
 			if payload.S != nil {
-				client.Lock()
-				client.sequenceNumber = payload.S
-				client.Unlock()
+				client.info.Lock()
+				client.info.sequenceNumber = payload.S
+				client.info.Unlock()
 			}
 
 			switch payload.Op {
@@ -169,9 +171,9 @@ func (client *client) connection(isResume bool) {
 		case <-immediateHeartbeat:
 		case <-time.After(time.Duration(interval) * time.Millisecond):
 		}
-		client.RLock()
-		err := client.gatewayConnWriteJSON(discord_models.NewHeartbeat(client.sequenceNumber))
-		client.RUnlock()
+		client.info.RLock()
+		err := client.gatewayConnWriteJSON(discord_models.NewHeartbeat(client.info.sequenceNumber))
+		client.info.RUnlock()
 		if err != nil {
 			log.Println(err)
 		}

@@ -19,9 +19,9 @@ func (client *client) dispatchHandler(payload discord_models.GatewayPayload) {
 			log.Println(err)
 			return
 		}
-		client.Lock()
-		client.session = &sessionState
-		client.Unlock()
+		client.info.Lock()
+		client.info.session = &sessionState
+		client.info.Unlock()
 	case "INTERACTION_CREATE":
 		var data discord_models.Interaction
 		err := mapstructure.Decode(payload.D, &data)
