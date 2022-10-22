@@ -1,18 +1,25 @@
-package queue
+package command
 
 import (
 	"bothoi/config"
 	"bothoi/models/discord_models"
+	"bothoi/references/app_command_type"
 	"bothoi/references/embed_color"
 	"bothoi/util"
 	"bothoi/util/http_util"
-	"bothoi/voice"
 	"fmt"
 	"log"
 	"strings"
 )
 
-func Execute(data *discord_models.Interaction) {
+var commandQueue = discord_models.AppCommand{
+	Type:              app_command_type.ChatInput,
+	Name:              "queue",
+	Description:       "List the music player queue",
+	DefaultPermission: true,
+}
+
+func executeQueue(cm *commandManager, data *discord_models.Interaction) {
 	var response discord_models.InteractionResponse
 	// do response to interaction
 	defer func() {
@@ -25,7 +32,7 @@ func Execute(data *discord_models.Interaction) {
 			log.Println(err)
 		}
 	}()
-	var playing, songQ = voice.GetSongQueue(data.GuildId, 0, 10)
+	var playing, songQ = cm.voiceClientManager.GetSongQueue(data.GuildId, 0, 10)
 	if songQ == nil || len(songQ) == 0 {
 		response = util.BuildPlayerResponse(
 			"No songs in queue",

@@ -12,7 +12,7 @@ import (
 )
 
 // play song if not start already
-func (client *VClient) play() {
+func (client *client) play() {
 	// ensure only one player is running at a time
 	client.Lock()
 	if client.playerRunning {
@@ -94,7 +94,7 @@ func (client *VClient) play() {
 	}
 }
 
-func (client *VClient) encodeSong(reader io.Reader, options *dca.EncodeOptions) {
+func (client *client) encodeSong(reader io.Reader, options *dca.EncodeOptions) {
 	encodeSession, err := dca.EncodeMem(reader, options)
 	defer encodeSession.Cleanup()
 
@@ -130,7 +130,7 @@ func (client *VClient) encodeSong(reader io.Reader, options *dca.EncodeOptions) 
 	}
 }
 
-func (client *VClient) downloadUpcoming() {
+func (client *client) downloadUpcoming() {
 	client.Lock()
 	defer client.Unlock()
 	if len(client.songQueue) >= 2 {

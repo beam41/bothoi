@@ -1,23 +1,15 @@
 package gateway
 
 import (
-	"bothoi/commands"
 	"bothoi/config"
-	"bothoi/global"
 	"bothoi/models/discord_models"
+	"bothoi/models/types"
 	"bothoi/repo"
-	"bothoi/voice"
 	"github.com/mitchellh/mapstructure"
 	"log"
 )
 
-func mapInteractionExecute(data *discord_models.Interaction) {
-	if interaction, ok := commands.ExecutorList[data.Data.Name]; ok {
-		interaction(data)
-	}
-}
-
-func dispatchHandler(payload discord_models.GatewayPayload) {
+func (client *client) dispatchHandler(payload discord_models.GatewayPayload) {
 	switch payload.T {
 	case "READY":
 		var sessionState discord_models.ReadyEvent
@@ -26,7 +18,9 @@ func dispatchHandler(payload discord_models.GatewayPayload) {
 			log.Println(err)
 			return
 		}
-		global.AddGatewaySession(&sessionState)
+		client.Lock()
+		client.session = &sessionState
+		client.Unlock()
 	case "INTERACTION_CREATE":
 		var data discord_models.Interaction
 		err := mapstructure.Decode(payload.D, &data)
@@ -34,7 +28,7 @@ func dispatchHandler(payload discord_models.GatewayPayload) {
 			log.Println(err)
 			return
 		}
-		mapInteractionExecute(&data)
+		client.command.MapInteractionExecute(&data)
 	case "GUILD_CREATE":
 		var data discord_models.GuildCreate
 		err := mapstructure.Decode(payload.D, &data)
@@ -60,7 +54,7 @@ func dispatchHandler(payload discord_models.GatewayPayload) {
 		if data.UserId != config.BotId {
 			repo.AddVoiceState(data)
 		} else {
-			voice.ReturnSessionId(data.GuildId, data.SessionId)
+			client.returnSessionId(data.GuildId, data.SessionId)
 		}
 	case "VOICE_SERVER_UPDATE":
 		var data discord_models.VoiceServer
@@ -69,10 +63,54 @@ func dispatchHandler(payload discord_models.GatewayPayload) {
 			log.Println(err)
 			return
 		}
-		voice.ReturnVoiceServer(data.GuildId, &data)
+		client.returnVoiceServer(data.GuildId, &data)
 	case "GUILD_UPDATE":
 		// not important now
 	case "GUILD_DELETE":
 		// not important now
 	}
+}
+
+func (client *client) returnSessionId(guildId types.Snowflake, sessionId string) {
+	client.voiceWaiter.RLock()
+	defer client.voiceWaiter.RLock()
+	if chanMap, ok := client.voiceWaiter.list[guildId]; ok {
+		chanMap.sessionIdChan <- sessionId
+	}
+}
+
+func (client *client) returnVoiceServer(guildId types.Snowflake, voiceServer *discord_models.VoiceServer) {
+	client.voiceWaiter.RLock()
+	defer client.voiceWaiter.RLock()
+	if chanMap, ok := client.voiceWaiter.list[guildId]; ok {
+		chanMap.voiceServerChan <- voiceServer
+	}
+}
+
+func (client *client) JoinVoiceChannelMsg(guildId, channelId types.Snowflake, sessionIdChan chan<- string, voiceServerChan chan<- *discord_models.VoiceServer) error {
+	createVoice := discord_models.NewVoiceStateUpdate(guildId, &channelId, false, true)
+	err := client.gatewayConnWriteJSON(createVoice)
+	if err != nil {
+		return err
+	}
+	client.voiceWaiter.Lock()
+	defer client.voiceWaiter.Lock()
+	client.voiceWaiter.list[guildId] = voiceInstantiateChan{sessionIdChan, voiceServerChan}
+	return nil
+}
+
+func (client *client) LeaveVoiceChannelMsg(guildId types.Snowflake) error {
+	client.CleanVoiceInstantiateChan(guildId)
+	leaveVoice := discord_models.NewVoiceStateUpdate(guildId, nil, false, false)
+	err := client.gatewayConnWriteJSON(leaveVoice)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (client *client) CleanVoiceInstantiateChan(guildId types.Snowflake) {
+	client.voiceWaiter.Lock()
+	defer client.voiceWaiter.Lock()
+	delete(client.voiceWaiter.list, guildId)
 }

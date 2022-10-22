@@ -1,19 +1,34 @@
-package pause
+package command
 
 import (
 	"bothoi/config"
 	"bothoi/models/discord_models"
+	"bothoi/references/app_command_type"
 	"bothoi/references/embed_color"
 	"bothoi/repo"
 	"bothoi/util"
 	"bothoi/util/http_util"
-	"bothoi/voice"
 	"fmt"
 	"log"
 	"strings"
 )
 
-func Execute(data *discord_models.Interaction) {
+var commandPause = []discord_models.AppCommand{
+	{
+		Type:              app_command_type.ChatInput,
+		Name:              "pause",
+		Description:       "Pause/Resume the player",
+		DefaultPermission: true,
+	},
+	{
+		Type:              app_command_type.ChatInput,
+		Name:              "resume",
+		Description:       "Pause/Resume the player",
+		DefaultPermission: true,
+	},
+}
+
+func executePause(cm *commandManager, data *discord_models.Interaction) {
 	var response discord_models.InteractionResponse
 	// do response to interaction
 	defer func() {
@@ -27,7 +42,7 @@ func Execute(data *discord_models.Interaction) {
 		}
 	}()
 	userVoiceState := repo.GetVoiceState(data.Member.User.Id)
-	clientVoiceChannel := voice.GetVoiceChannelId(data.GuildId)
+	clientVoiceChannel := cm.voiceClientManager.GetVoiceChannelId(data.GuildId)
 	if userVoiceState == nil || *userVoiceState.ChannelId != clientVoiceChannel {
 		response = util.BuildPlayerResponse(
 			"Pause error",
@@ -37,7 +52,7 @@ func Execute(data *discord_models.Interaction) {
 		)
 		return
 	}
-	pausing, err := voice.PauseClient(data.GuildId)
+	pausing, err := cm.voiceClientManager.PauseClient(data.GuildId)
 	if err != nil {
 		response = util.BuildPlayerResponse(
 			"Pause error",

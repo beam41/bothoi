@@ -1,20 +1,36 @@
-package play
+package command
 
 import (
 	"bothoi/config"
 	"bothoi/models/discord_models"
+	"bothoi/references/app_command_option_type"
+	"bothoi/references/app_command_type"
 	"bothoi/references/embed_color"
 	"bothoi/repo"
 	"bothoi/util"
 	"bothoi/util/http_util"
 	"bothoi/util/yt_util.go"
-	"bothoi/voice"
 	"fmt"
 	"log"
 	"strings"
 )
 
-func Execute(data *discord_models.Interaction) {
+var commandPlay = discord_models.AppCommand{
+	Type:              app_command_type.ChatInput,
+	Name:              "play",
+	Description:       "Play a song",
+	DefaultPermission: true,
+	Options: []discord_models.AppCommandOption{
+		{
+			Type:        app_command_option_type.String,
+			Name:        "song",
+			Description: "The song to play",
+			Required:    true,
+		},
+	},
+}
+
+func executePlay(cm *commandManager, data *discord_models.Interaction) {
 	options := util.MapInteractionOption(data.Data.Options)
 	userVoiceState := repo.GetVoiceState(data.Member.User.Id)
 
@@ -69,7 +85,7 @@ func Execute(data *discord_models.Interaction) {
 	}
 	song.RequesterId = data.Member.User.Id
 
-	err = voice.StartClient(data.GuildId, *userVoiceState.ChannelId)
+	err = cm.voiceClientManager.StartClient(data.GuildId, *userVoiceState.ChannelId)
 	if err != nil {
 		if err.Error() == "already in a different voice channel" {
 			response = util.BuildPlayerResponseData(
@@ -87,7 +103,7 @@ func Execute(data *discord_models.Interaction) {
 				"Error",
 				embed_color.Error,
 			)
-			err := voice.StopClient(data.GuildId)
+			err := cm.voiceClientManager.StopClient(data.GuildId)
 			if err != nil {
 				log.Println(err)
 			}
@@ -95,7 +111,7 @@ func Execute(data *discord_models.Interaction) {
 		}
 	}
 	log.Println("Starting client", song)
-	queueSize := voice.AppendSongToSongQueue(data.GuildId, song)
+	queueSize := cm.voiceClientManager.AppendSongToSongQueue(data.GuildId, song)
 	if queueSize == 1 {
 		response = util.BuildPlayerResponseData(
 			"Play a song",

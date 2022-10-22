@@ -11,7 +11,6 @@ import (
 	"crypto/rand"
 	"encoding/binary"
 	"encoding/json"
-	"errors"
 	"log"
 	"math"
 	"math/big"
@@ -25,7 +24,7 @@ import (
 	"golang.org/x/crypto/nacl/secretbox"
 )
 
-type VClient struct {
+type client struct {
 	sync.RWMutex
 	ctx                context.Context
 	ctxCancel          context.CancelFunc
@@ -51,65 +50,16 @@ type VClient struct {
 	skip               bool
 	isWaitForExit      bool
 	stopWaitForExit    chan struct{}
+	clm                *clientManager
 }
 
-// start the client if not started already
-func StartClient(guildId, channelId types.Snowflake) error {
-	clientList.RLock()
-	var client = clientList.c[guildId]
-	if client != nil {
-		clientList.RUnlock()
-		client.RLock()
-		defer client.RUnlock()
-		if (client.voiceChannelId != "") && (client.voiceChannelId != channelId) {
-			return errors.New("already in a different voice channel")
-		} else if client.running {
-			return nil
-		}
-	}
-	clientList.RUnlock()
-
-	client = addGuildToClient(guildId, channelId)
-	sessionIdChan := make(chan string)
-	voiceServerChan := make(chan *discord_models.VoiceServer)
-	err := joinVoiceChannel(guildId, channelId, sessionIdChan, voiceServerChan)
-	if err != nil {
-		return err
-	}
-
-	// wait for session id and voice server
-	go func() {
-		sessionId, voiceServer := <-sessionIdChan, <-voiceServerChan
-		client.Lock()
-		defer client.Unlock()
-		client.sessionId = &sessionId
-		client.voiceServer = voiceServer
-		go client.connect()
-	}()
-
-	return nil
-}
-
-// remove client from list and properly leave
-func StopClient(guildId types.Snowflake) error {
-	err := removeClient(guildId)
-	if err != nil {
-		return err
-	}
-	err = leaveVoiceChannel(guildId)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (client *VClient) connWriteJSON(v any) (err error) {
+func (client *client) connWriteJSON(v any) (err error) {
 	log.Println("outgoing voice: ", v)
 	err = client.c.WriteJSON(v)
 	return
 }
 
-func (client *VClient) connect() {
+func (client *client) connect() {
 	// only connect once
 	client.Lock()
 	if client.running {
@@ -215,7 +165,7 @@ func (client *VClient) connect() {
 			if prevNonce != hbNonce {
 				// handle nonce error
 				log.Println(client.guildId, "Nonce invalid")
-				err := StopClient(client.guildId)
+				err := client.clm.StopClient(client.guildId)
 				if err != nil {
 					log.Println(err)
 				}
@@ -228,7 +178,7 @@ func (client *VClient) connect() {
 		case <-time.After(time.Duration(interval) * time.Millisecond):
 			// uh oh timeout, goodbye
 			log.Println(client.guildId, "Timeout")
-			err := StopClient(client.guildId)
+			err := client.clm.StopClient(client.guildId)
 			if err != nil {
 				log.Println(err)
 			}
@@ -248,7 +198,7 @@ func (client *VClient) connect() {
 	}
 }
 
-func (client *VClient) connectUdp() {
+func (client *client) connectUdp() {
 	raddr, err := net.ResolveUDPAddr("udp", client.udpInfo.IP+":"+strconv.Itoa(int(client.udpInfo.Port)))
 	if err != nil {
 		log.Println(err)
@@ -269,7 +219,7 @@ func (client *VClient) connectUdp() {
 	go client.keepAlive(time.Second * 5)
 }
 
-func (client *VClient) performIpDiscovery() (ip string, port uint16) {
+func (client *client) performIpDiscovery() (ip string, port uint16) {
 	send := make([]byte, 70)
 
 	binary.BigEndian.PutUint32(send, client.udpInfo.SSRC)
@@ -300,7 +250,7 @@ func (client *VClient) performIpDiscovery() (ip string, port uint16) {
 	return
 }
 
-func (client *VClient) keepAlive(i time.Duration) {
+func (client *client) keepAlive(i time.Duration) {
 	defer func(uc *net.UDPConn) {
 		err := uc.Close()
 		if err != nil {
@@ -334,7 +284,7 @@ func (client *VClient) keepAlive(i time.Duration) {
 	}
 }
 
-func (client *VClient) sendSongFromFrameData() {
+func (client *client) sendSongFromFrameData() {
 	client.udpReadyWait.L.Lock()
 	for !client.udpReady {
 		client.udpReadyWait.Wait()
@@ -417,7 +367,7 @@ func (client *VClient) sendSongFromFrameData() {
 	}
 }
 
-func (client *VClient) waitForExit() {
+func (client *client) waitForExit() {
 	client.RLock()
 	if client.isWaitForExit == true {
 		client.stopWaitForExit <- struct{}{}
@@ -435,7 +385,7 @@ func (client *VClient) waitForExit() {
 		if client.running {
 			client.RUnlock()
 			log.Println(client.guildId, "Idle Timeout")
-			err := StopClient(client.guildId)
+			err := client.clm.StopClient(client.guildId)
 			if err != nil {
 				log.Println(err)
 			}
