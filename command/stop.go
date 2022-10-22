@@ -35,7 +35,7 @@ func executeStop(data *discord_models.Interaction) {
 		}
 	}()
 	userVoiceState := repo.GetVoiceState(data.Member.User.Id)
-	clientVoiceChannel := bh_context.Ctx.VoiceClientManager.GetVoiceChannelId(data.GuildId)
+	clientVoiceChannel := bh_context.GetVoiceClientManager().GetVoiceChannelId(data.GuildId)
 	if userVoiceState == nil || *userVoiceState.ChannelId != clientVoiceChannel {
 		response = util.BuildPlayerResponse(
 			"Cannot stop",
@@ -45,7 +45,7 @@ func executeStop(data *discord_models.Interaction) {
 		)
 		return
 	}
-	err := bh_context.Ctx.VoiceClientManager.StopClient(data.GuildId)
+	err := bh_context.GetVoiceClientManager().StopClient(data.GuildId)
 	if err != nil {
 		response = util.BuildPlayerResponse(
 			"Stopped",

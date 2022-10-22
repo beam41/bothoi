@@ -33,7 +33,7 @@ func executeQueue(data *discord_models.Interaction) {
 			log.Println(err)
 		}
 	}()
-	var playing, songQ = bh_context.Ctx.VoiceClientManager.GetSongQueue(data.GuildId, 0, 10)
+	var playing, songQ = bh_context.GetVoiceClientManager().GetSongQueue(data.GuildId, 0, 10)
 	if songQ == nil || len(songQ) == 0 {
 		response = util.BuildPlayerResponse(
 			"No songs in queue",

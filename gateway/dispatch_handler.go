@@ -29,7 +29,7 @@ func (client *client) dispatchHandler(payload discord_models.GatewayPayload) {
 			log.Println(err)
 			return
 		}
-		bh_context.Ctx.CommandManager.MapInteractionExecute(&data)
+		bh_context.GetCommandManager().MapInteractionExecute(&data)
 	case "GUILD_CREATE":
 		var data discord_models.GuildCreate
 		err := mapstructure.Decode(payload.D, &data)

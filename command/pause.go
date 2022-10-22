@@ -43,7 +43,7 @@ func executePause(data *discord_models.Interaction) {
 		}
 	}()
 	userVoiceState := repo.GetVoiceState(data.Member.User.Id)
-	clientVoiceChannel := bh_context.Ctx.VoiceClientManager.GetVoiceChannelId(data.GuildId)
+	clientVoiceChannel := bh_context.GetVoiceClientManager().GetVoiceChannelId(data.GuildId)
 	if userVoiceState == nil || *userVoiceState.ChannelId != clientVoiceChannel {
 		response = util.BuildPlayerResponse(
 			"Pause error",
@@ -53,7 +53,7 @@ func executePause(data *discord_models.Interaction) {
 		)
 		return
 	}
-	pausing, err := bh_context.Ctx.VoiceClientManager.PauseClient(data.GuildId)
+	pausing, err := bh_context.GetVoiceClientManager().PauseClient(data.GuildId)
 	if err != nil {
 		response = util.BuildPlayerResponse(
 			"Pause error",

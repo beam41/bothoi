@@ -8,9 +8,10 @@ import (
 )
 
 func main() {
-	bh_context.Ctx.CommandManager = command.NewCommandManager()
-	bh_context.Ctx.GatewayClient = gateway.NewClient()
-	bh_context.Ctx.VoiceClientManager = voice.NewClientManager()
-	bh_context.Ctx.CommandManager.Register()
-	bh_context.Ctx.GatewayClient.Connect()
+	gatewayClient := gateway.NewClient()
+	voiceClientManager := voice.NewClientManager()
+	commandManager := command.NewCommandManager()
+	bh_context.SetCtx(gatewayClient, voiceClientManager, commandManager)
+	bh_context.GetCommandManager().Register()
+	bh_context.GetGatewayClient().Connect()
 }

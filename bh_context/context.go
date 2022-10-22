@@ -6,14 +6,32 @@ import (
 	"bothoi/voice/voice_interface"
 )
 
-type Context struct {
-	GatewayClient      gateway_interface.ClientInterface
-	CommandManager     command_interface.CommandManagerInterface
-	VoiceClientManager voice_interface.ClientManagerInterface
+type context struct {
+	gatewayClient      gateway_interface.ClientInterface
+	voiceClientManager voice_interface.ClientManagerInterface
+	commandManager     command_interface.CommandManagerInterface
 }
 
-var Ctx = &Context{
-	GatewayClient:      nil,
-	CommandManager:     nil,
-	VoiceClientManager: nil,
+var ctx *context
+
+func SetCtx(gatewayClient gateway_interface.ClientInterface,
+	voiceClientManager voice_interface.ClientManagerInterface,
+	commandManager command_interface.CommandManagerInterface) {
+	ctx = &context{
+		gatewayClient,
+		voiceClientManager,
+		commandManager,
+	}
+}
+
+func GetGatewayClient() gateway_interface.ClientInterface {
+	return ctx.gatewayClient
+}
+
+func GetVoiceClientManager() voice_interface.ClientManagerInterface {
+	return ctx.voiceClientManager
+}
+
+func GetCommandManager() command_interface.CommandManagerInterface {
+	return ctx.commandManager
 }

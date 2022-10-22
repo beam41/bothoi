@@ -86,7 +86,7 @@ func executePlay(data *discord_models.Interaction) {
 	}
 	song.RequesterId = data.Member.User.Id
 
-	err = bh_context.Ctx.VoiceClientManager.StartClient(data.GuildId, *userVoiceState.ChannelId)
+	err = bh_context.GetVoiceClientManager().StartClient(data.GuildId, *userVoiceState.ChannelId)
 	if err != nil {
 		if err.Error() == "already in a different voice channel" {
 			response = util.BuildPlayerResponseData(
@@ -104,7 +104,7 @@ func executePlay(data *discord_models.Interaction) {
 				"Error",
 				embed_color.Error,
 			)
-			err := bh_context.Ctx.VoiceClientManager.StopClient(data.GuildId)
+			err := bh_context.GetVoiceClientManager().StopClient(data.GuildId)
 			if err != nil {
 				log.Println(err)
 			}
@@ -112,7 +112,7 @@ func executePlay(data *discord_models.Interaction) {
 		}
 	}
 	log.Println("Starting client", song)
-	queueSize := bh_context.Ctx.VoiceClientManager.AppendSongToSongQueue(data.GuildId, song)
+	queueSize := bh_context.GetVoiceClientManager().AppendSongToSongQueue(data.GuildId, song)
 	if queueSize == 1 {
 		response = util.BuildPlayerResponseData(
 			"Play a song",
