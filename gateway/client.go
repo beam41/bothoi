@@ -96,8 +96,8 @@ func (client *client) connection(isResume bool) {
 		}
 	}
 
-	heatbeatInterval := make(chan int)
-	heatbeatAcked := make(chan struct{})
+	heartbeatInterval := make(chan int)
+	heartbeatAcked := make(chan struct{})
 	immediateHeartbeat := make(chan struct{})
 
 	// receive the gateway response
@@ -132,9 +132,9 @@ func (client *client) connection(isResume bool) {
 
 			switch payload.Op {
 			case gateway_opcode.Hello:
-				heatbeatInterval <- int(payload.D.(map[string]any)["heartbeat_interval"].(float64))
+				heartbeatInterval <- int(payload.D.(map[string]any)["heartbeat_interval"].(float64))
 			case gateway_opcode.HeartbeatAck:
-				heatbeatAcked <- struct{}{}
+				heartbeatAcked <- struct{}{}
 			case gateway_opcode.Heartbeat:
 				immediateHeartbeat <- struct{}{}
 			case gateway_opcode.Dispatch:
@@ -149,27 +149,38 @@ func (client *client) connection(isResume bool) {
 	}()
 
 	// keeping heartbeats and prevent application from closing.
-	interval := <-heatbeatInterval
+	interval := <-heartbeatInterval
 
 	time.Sleep(time.Duration(float64(interval)*rand.Float64()) * time.Millisecond)
 	err = client.gatewayConnWriteJSON(discord_models.NewHeartbeat(nil))
 	if err != nil {
 		log.Println(err)
 	}
+	heartbeatIntervalTimer := time.NewTimer(time.Duration(interval) * time.Millisecond)
+	defer func() {
+		if !heartbeatIntervalTimer.Stop() {
+			<-heartbeatIntervalTimer.C
+		}
+	}()
 	for {
 		// wait for heartbeat ack
 		select {
-		case <-heatbeatAcked:
-		case <-time.After(time.Duration(interval) * time.Millisecond):
+		case <-heartbeatAcked:
+		case <-heartbeatIntervalTimer.C:
 			// uh oh timeout, reconnect
 			log.Println("timeout, attempting to reconnect")
 			client.gatewayConnCloseRestart()
 			return
 		}
+
+		if !heartbeatIntervalTimer.Stop() {
+			<-heartbeatIntervalTimer.C
+		}
+		heartbeatIntervalTimer.Reset(time.Duration(interval) * time.Millisecond)
 		// wait for next heartbeat
 		select {
 		case <-immediateHeartbeat:
-		case <-time.After(time.Duration(interval) * time.Millisecond):
+		case <-heartbeatIntervalTimer.C:
 		}
 		client.info.RLock()
 		err := client.gatewayConnWriteJSON(discord_models.NewHeartbeat(client.info.sequenceNumber))
@@ -177,5 +188,11 @@ func (client *client) connection(isResume bool) {
 		if err != nil {
 			log.Println(err)
 		}
+
+		// set interval for next loop
+		if !heartbeatIntervalTimer.Stop() {
+			<-heartbeatIntervalTimer.C
+		}
+		heartbeatIntervalTimer.Reset(time.Duration(interval) * time.Millisecond)
 	}
 }
