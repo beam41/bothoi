@@ -156,31 +156,23 @@ func (client *client) connection(isResume bool) {
 	if err != nil {
 		log.Println(err)
 	}
-	heartbeatIntervalTimer := time.NewTimer(time.Duration(interval) * time.Millisecond)
-	defer func() {
-		if !heartbeatIntervalTimer.Stop() {
-			<-heartbeatIntervalTimer.C
-		}
-	}()
+	heartbeatIntervalTicker := time.NewTicker(time.Duration(interval) * time.Millisecond)
+	defer heartbeatIntervalTicker.Stop()
 	for {
 		// wait for heartbeat ack
 		select {
 		case <-heartbeatAcked:
-		case <-heartbeatIntervalTimer.C:
+		case <-heartbeatIntervalTicker.C:
 			// uh oh timeout, reconnect
 			log.Println("timeout, attempting to reconnect")
 			client.gatewayConnCloseRestart()
 			return
 		}
 
-		if !heartbeatIntervalTimer.Stop() {
-			<-heartbeatIntervalTimer.C
-		}
-		heartbeatIntervalTimer.Reset(time.Duration(interval) * time.Millisecond)
 		// wait for next heartbeat
 		select {
 		case <-immediateHeartbeat:
-		case <-heartbeatIntervalTimer.C:
+		case <-heartbeatIntervalTicker.C:
 		}
 		client.info.RLock()
 		err := client.gatewayConnWriteJSON(discord_models.NewHeartbeat(client.info.sequenceNumber))
@@ -188,11 +180,5 @@ func (client *client) connection(isResume bool) {
 		if err != nil {
 			log.Println(err)
 		}
-
-		// set interval for next loop
-		if !heartbeatIntervalTimer.Stop() {
-			<-heartbeatIntervalTimer.C
-		}
-		heartbeatIntervalTimer.Reset(time.Duration(interval) * time.Millisecond)
 	}
 }

@@ -148,15 +148,11 @@ func (client *client) connect() {
 	interval := <-heartbeatInterval
 	prevNonce := int64(0)
 
-	heartbeatIntervalTimer := time.NewTimer(time.Duration(interval) * time.Millisecond)
-	defer func() {
-		if !heartbeatIntervalTimer.Stop() {
-			<-heartbeatIntervalTimer.C
-		}
-	}()
+	heartbeatIntervalTicker := time.NewTicker(time.Duration(interval) * time.Millisecond)
+	defer heartbeatIntervalTicker.Stop()
 
 	for {
-		<-heartbeatIntervalTimer.C
+		<-heartbeatIntervalTicker.C
 
 		randNum, err := rand.Int(rand.Reader, big.NewInt(math.MaxInt64))
 		if err != nil {
@@ -169,7 +165,6 @@ func (client *client) connect() {
 			log.Println(err)
 		}
 
-		heartbeatIntervalTimer.Reset(time.Duration(interval) * time.Millisecond)
 		select {
 		case hbNonce := <-heartbeatAcked:
 			if prevNonce != hbNonce {
@@ -185,7 +180,7 @@ func (client *client) connect() {
 				}
 				return
 			}
-		case <-heartbeatIntervalTimer.C:
+		case <-heartbeatIntervalTicker.C:
 			// uh oh timeout, goodbye
 			log.Println(client.guildId, "Timeout")
 			err := client.clm.StopClient(client.guildId)
@@ -205,11 +200,6 @@ func (client *client) connect() {
 			}
 			return
 		}
-
-		if !heartbeatIntervalTimer.Stop() {
-			<-heartbeatIntervalTimer.C
-		}
-		heartbeatIntervalTimer.Reset(time.Duration(interval) * time.Millisecond)
 	}
 }
 
@@ -383,18 +373,21 @@ func (client *client) sendSongFromFrameData() {
 }
 
 func (client *client) waitForExit() {
-	// todo: use idleTimeoutTimer.Reset
-	client.RLock()
+	client.Lock()
 	if client.isWaitForExit == true {
 		client.stopWaitForExit <- struct{}{}
 	}
 	client.isWaitForExit = true
-	client.RUnlock()
+	client.Unlock()
 
 	idleTimeoutCountdown := time.NewTimer(config.IdleTimeout)
 	defer func() {
+		//clean timer just in case
 		if !idleTimeoutCountdown.Stop() {
-			<-idleTimeoutCountdown.C
+			select {
+			case <-idleTimeoutCountdown.C:
+			default:
+			}
 		}
 	}()
 
