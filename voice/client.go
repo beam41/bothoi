@@ -31,7 +31,7 @@ type client struct {
 	guildId            types.Snowflake
 	voiceChannelId     types.Snowflake
 	sessionId          *string
-	songQueue          []*models.SongItemWData
+	songQueue          []*models.SongItem
 	voiceServer        *discord_models.VoiceServer
 	c                  *websocket.Conn
 	uc                 *net.UDPConn
@@ -221,7 +221,7 @@ func (client *client) connectUdp() {
 		log.Println(err)
 	}
 
-	go client.keepAlive(time.Second * 5)
+	go client.udpKeepAlive(time.Second * 5)
 }
 
 func (client *client) performIpDiscovery() (ip string, port uint16) {
@@ -255,7 +255,7 @@ func (client *client) performIpDiscovery() (ip string, port uint16) {
 	return
 }
 
-func (client *client) keepAlive(i time.Duration) {
+func (client *client) udpKeepAlive(i time.Duration) {
 	defer func(uc *net.UDPConn) {
 		err := uc.Close()
 		if err != nil {

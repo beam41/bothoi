@@ -101,14 +101,14 @@ func executePlay(data *discord_models.Interaction) {
 	if queueSize == 1 {
 		response = util.BuildPlayerResponseData(
 			"Play a song",
-			fmt.Sprintf("Playing %s\nrequested by <@%s>", song.Title, data.Member.User.Id),
+			fmt.Sprintf("Playing %s\n%s\nrequested by <@%s>", song.Title, song.Duration, data.Member.User.Id),
 			"Playing",
 			embed_color.Playing,
 		)
 	} else {
 		response = util.BuildPlayerResponseData(
 			"Play a song",
-			fmt.Sprintf("Added %s\nrequested by <@%s> to queue", song.Title, data.Member.User.Id),
+			fmt.Sprintf("Added %s\n%s\nrequested by <@%s>", song.Title, song.Duration, data.Member.User.Id),
 			fmt.Sprintf("#%d in queue", queueSize),
 			embed_color.Playing,
 		)

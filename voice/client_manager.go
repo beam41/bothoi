@@ -33,11 +33,11 @@ func (clm *clientManager) createClient(guildId, voiceChannelId types.Snowflake) 
 	clm.list[guildId] = &client{
 		guildId:         guildId,
 		voiceChannelId:  voiceChannelId,
-		songQueue:       []*models.SongItemWData{},
+		songQueue:       []*models.SongItem{},
 		udpReadyWait:    sync.NewCond(&sync.Mutex{}),
 		ctx:             ctx,
 		ctxCancel:       cancel,
-		frameData:       make(chan []byte),
+		frameData:       make(chan []byte, 1),
 		pauseWait:       sync.NewCond(&sync.Mutex{}),
 		stopWaitForExit: make(chan struct{}),
 		clm:             clm,
@@ -56,14 +56,8 @@ func (clm *clientManager) AppendSongToSongQueue(guildId types.Snowflake, songIte
 	}
 	client.Lock()
 	defer client.Unlock()
-	client.songQueue = append(client.songQueue, &models.SongItemWData{
-		YtId:        songItem.YtId,
-		Title:       songItem.Title,
-		Duration:    songItem.Duration,
-		RequesterId: songItem.RequesterId,
-	})
+	client.songQueue = append(client.songQueue, &songItem)
 	go client.play()
-	go client.downloadUpcoming()
 	return len(client.songQueue)
 }
 

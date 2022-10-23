@@ -17,5 +17,6 @@ const (
 	IdleTimeout                     = time.Minute * 5
 	DcaFramerate                    = 48000
 	DcaFrameduration                = 20
+	DcaBufferedFrame                = int(time.Minute * 3 / (time.Millisecond * DcaFrameduration))
 	InteractionResponseEditEndpoint = "https://discord.com/api/webhooks/<application_id>/<interaction_token>/messages/@original"
 )

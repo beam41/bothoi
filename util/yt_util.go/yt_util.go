@@ -16,6 +16,17 @@ import (
 	"sync"
 )
 
+func GetYoutubeDownloadUrl(ytId string) (string, error) {
+	cmd := exec.Command("youtube-dl", "-g", "-f", "bestaudio", "--", ytId)
+
+	stdout, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+	urlStr := strings.TrimSpace(string(stdout))
+	return urlStr, nil
+}
+
 func DownloadYt(ytId string) ([]byte, error) {
 	cmd := exec.Command("youtube-dl", "-g", "-f", "bestaudio", "--", ytId)
 

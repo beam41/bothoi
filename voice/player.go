@@ -4,7 +4,6 @@ import (
 	"bothoi/config"
 	"bothoi/models"
 	"bothoi/util/yt_util.go"
-	"bytes"
 	"io"
 	"log"
 
@@ -33,44 +32,24 @@ func (client *client) play() {
 	options.FrameDuration = config.DcaFrameduration
 	options.RawOutput = true
 	options.Bitrate = 96
-	options.Application = "audio"
+	options.BufferedFrames = config.DcaBufferedFrame
+	options.Application = dca.AudioApplicationAudio
 
 	// run player
 	for {
 		currentSong := client.songQueue[0]
 		log.Println(client.guildId, "Playing song: ", currentSong.Title)
-		currentSong.DownloadLock.Lock()
-		if currentSong.SongData == nil {
-			sd, err := yt_util.DownloadYt(currentSong.YtId)
-			currentSong.SongData = sd
-			if err != nil {
-				currentSong.DownloadLock.Unlock()
-				log.Println(client.guildId, "Can't play this song: ", err)
-
-				client.Lock()
-				if len(client.songQueue) > 1 {
-					client.songQueue = client.songQueue[1:]
-					client.Unlock()
-					client.downloadUpcoming()
-				} else {
-					// stop player
-					client.songQueue = []*models.SongItemWData{}
-					client.playerRunning = false
-					client.Unlock()
-					go client.waitForExit()
-					return
-				}
-				continue
-			}
+		url, err := yt_util.GetYoutubeDownloadUrl(currentSong.YtId)
+		if err != nil {
+			log.Println(err)
+			continue
 		}
-		currentSong.DownloadLock.Unlock()
 
 		client.Lock()
 		client.playing = true
 		client.Unlock()
 
-		reader := bytes.NewReader(currentSong.SongData)
-		client.encodeSong(reader, options)
+		client.encodeSong(url, options)
 
 		client.Lock()
 		if client.destroyed {
@@ -82,10 +61,9 @@ func (client *client) play() {
 		if len(client.songQueue) > 1 {
 			client.songQueue = client.songQueue[1:]
 			client.Unlock()
-			client.downloadUpcoming()
 		} else {
 			// stop player
-			client.songQueue = []*models.SongItemWData{}
+			client.songQueue = []*models.SongItem{}
 			client.playerRunning = false
 			client.Unlock()
 			go client.waitForExit()
@@ -94,8 +72,8 @@ func (client *client) play() {
 	}
 }
 
-func (client *client) encodeSong(reader io.Reader, options *dca.EncodeOptions) {
-	encodeSession, err := dca.EncodeMem(reader, options)
+func (client *client) encodeSong(url string, options *dca.EncodeOptions) {
+	encodeSession, err := dca.EncodeFile(url, options)
 	defer encodeSession.Cleanup()
 
 	if err != nil {
@@ -105,12 +83,10 @@ func (client *client) encodeSong(reader io.Reader, options *dca.EncodeOptions) {
 	for {
 		frame, err := encodeSession.OpusFrame()
 		if err != nil {
-			if err == io.EOF {
-				return
-			} else {
-				log.Panicln(err)
-				return
+			if err != io.EOF {
+				log.Println("encodeSession error", err)
 			}
+			return
 		}
 
 		client.RLock()
@@ -127,27 +103,5 @@ func (client *client) encodeSong(reader io.Reader, options *dca.EncodeOptions) {
 			client.pauseWait.Wait()
 		}
 		client.pauseWait.L.Unlock()
-	}
-}
-
-func (client *client) downloadUpcoming() {
-	client.Lock()
-	defer client.Unlock()
-	if len(client.songQueue) >= 2 {
-		song1 := client.songQueue[1]
-		if song1.Downloading {
-			// prevent multiple goroutine waiting on lock while download
-			return
-		}
-		song1.Downloading = true
-
-		go func() {
-			song1.DownloadLock.Lock()
-			if song1.SongData == nil {
-				sd, _ := yt_util.DownloadYt(song1.YtId)
-				song1.SongData = sd
-			}
-			song1.DownloadLock.Unlock()
-		}()
 	}
 }
