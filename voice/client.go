@@ -21,7 +21,6 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/mitchellh/mapstructure"
-	"golang.org/x/crypto/nacl/secretbox"
 )
 
 type client struct {
@@ -42,7 +41,6 @@ type client struct {
 	udpReady           bool
 	udpReadyWait       *sync.Cond
 	speaking           bool
-	frameData          chan []byte
 	pausing            bool
 	pauseWait          *sync.Cond
 	playing            bool
@@ -127,7 +125,6 @@ func (client *client) connect() {
 				client.udpInfo = &data
 				// start the UDP connection
 				go client.connectUdp()
-				go client.sendSongFromFrameData()
 			case voice_opcode.SessionDescription:
 				var data discord_models.SessionDescription
 				err := mapstructure.Decode(payload.D, &data)
@@ -270,7 +267,6 @@ func (client *client) udpKeepAlive(i time.Duration) {
 	ticker := time.NewTicker(i)
 	defer ticker.Stop()
 	for {
-
 		binary.LittleEndian.PutUint64(packet, sequence)
 		sequence++
 
@@ -285,89 +281,6 @@ func (client *client) udpKeepAlive(i time.Duration) {
 		case <-client.ctx.Done():
 			return
 		case <-ticker.C:
-		}
-	}
-}
-
-func (client *client) sendSongFromFrameData() {
-	client.udpReadyWait.L.Lock()
-	for !client.udpReady {
-		client.udpReadyWait.Wait()
-	}
-	client.udpReadyWait.L.Unlock()
-
-	frameTime := uint32(config.DcaFramerate * config.DcaFrameduration / 1000)
-	ticker := time.NewTicker(time.Millisecond * time.Duration(config.DcaFrameduration))
-
-	client.RLock()
-	if !client.speaking {
-		err := client.connWriteJSON(discord_models.NewVoiceSpeaking(client.udpInfo.SSRC))
-		if err != nil {
-			log.Println(err)
-		}
-	}
-	client.RUnlock()
-
-	randNum, err := rand.Int(rand.Reader, big.NewInt(math.MaxInt64))
-	if err != nil {
-		log.Println(err)
-	}
-	var sequenceNumber = uint16(randNum.Uint64())
-
-	randNum, err = rand.Int(rand.Reader, big.NewInt(math.MaxInt64))
-	if err != nil {
-		log.Println(err)
-	}
-	var timeStamp = uint32(randNum.Uint64())
-
-	header := make([]byte, 12)
-	var nonce [24]byte
-
-	header[0] = 0x80
-	header[1] = 0x78
-	binary.BigEndian.PutUint32(header[8:], client.udpInfo.SSRC)
-
-	for {
-		binary.BigEndian.PutUint16(header[2:], sequenceNumber)
-		binary.BigEndian.PutUint32(header[4:], timeStamp)
-
-		copy(nonce[:], header)
-
-		var frame []byte
-		var ok bool
-		select {
-		case <-client.ctx.Done():
-			return
-		case frame, ok = <-client.frameData:
-			if !ok {
-				return
-			}
-		}
-
-		packet := secretbox.Seal(header, frame, &nonce, &client.sessionDescription.SecretKey)
-
-		select {
-		case <-client.ctx.Done():
-			return
-		case <-ticker.C:
-		}
-
-		_, err = client.uc.Write(packet)
-
-		if err != nil {
-			log.Println(err)
-		}
-
-		if (sequenceNumber) == 0xFFFF {
-			sequenceNumber = 0
-		} else {
-			sequenceNumber++
-		}
-
-		if (timeStamp + frameTime) >= 0xFFFFFFFF {
-			timeStamp = 0
-		} else {
-			timeStamp += frameTime
 		}
 	}
 }

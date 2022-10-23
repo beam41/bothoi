@@ -37,7 +37,6 @@ func (clm *clientManager) createClient(guildId, voiceChannelId types.Snowflake) 
 		udpReadyWait:    sync.NewCond(&sync.Mutex{}),
 		ctx:             ctx,
 		ctxCancel:       cancel,
-		frameData:       make(chan []byte, 1),
 		pauseWait:       sync.NewCond(&sync.Mutex{}),
 		stopWaitForExit: make(chan struct{}),
 		clm:             clm,
@@ -76,7 +75,6 @@ func (clm *clientManager) removeClient(guildId types.Snowflake) error {
 	client.pauseWait.Broadcast()
 	client.ctxCancel()
 	delete(clm.list, guildId)
-	close(client.frameData)
 	return nil
 }
 

@@ -3,9 +3,16 @@ package voice
 import (
 	"bothoi/config"
 	"bothoi/models"
+	"bothoi/models/discord_models"
 	"bothoi/util/yt_util.go"
+	"crypto/rand"
+	"encoding/binary"
+	"golang.org/x/crypto/nacl/secretbox"
 	"io"
 	"log"
+	"math"
+	"math/big"
+	"time"
 
 	"github.com/jonas747/dca/v2"
 )
@@ -19,10 +26,6 @@ func (client *client) play() {
 		return
 	}
 	client.playerRunning = true
-	if client.isWaitForExit {
-		client.isWaitForExit = false
-		client.stopWaitForExit <- struct{}{}
-	}
 	client.Unlock()
 
 	// encode settings
@@ -47,9 +50,13 @@ func (client *client) play() {
 
 		client.Lock()
 		client.playing = true
+		if client.isWaitForExit {
+			client.isWaitForExit = false
+			client.stopWaitForExit <- struct{}{}
+		}
 		client.Unlock()
 
-		client.encodeSong(url, options)
+		client.sendSong(url, options)
 
 		client.Lock()
 		if client.destroyed {
@@ -72,15 +79,65 @@ func (client *client) play() {
 	}
 }
 
-func (client *client) encodeSong(url string, options *dca.EncodeOptions) {
+func (client *client) sendSong(url string, options *dca.EncodeOptions) {
+	client.udpReadyWait.L.Lock()
+	for !client.udpReady {
+		client.udpReadyWait.Wait()
+	}
+	client.udpReadyWait.L.Unlock()
+
 	encodeSession, err := dca.EncodeFile(url, options)
 	defer encodeSession.Cleanup()
+
+	frameTime := uint32(config.DcaFramerate * config.DcaFrameduration / 1000)
+	ticker := time.NewTicker(time.Millisecond * time.Duration(config.DcaFrameduration))
+
+	client.RLock()
+	if !client.speaking {
+		err := client.connWriteJSON(discord_models.NewVoiceSpeaking(client.udpInfo.SSRC))
+		if err != nil {
+			log.Println(err)
+		}
+	}
+	client.RUnlock()
+
+	randNum, err := rand.Int(rand.Reader, big.NewInt(math.MaxInt64))
+	if err != nil {
+		log.Println(err)
+	}
+	sequenceNumber := uint16(randNum.Uint64())
+
+	randNum, err = rand.Int(rand.Reader, big.NewInt(math.MaxInt64))
+	if err != nil {
+		log.Println(err)
+	}
+	timeStamp := uint32(randNum.Uint64())
+
+	header := make([]byte, 12)
+	var nonce [24]byte
+
+	header[0] = 0x80
+	header[1] = 0x78
+	binary.BigEndian.PutUint32(header[8:], client.udpInfo.SSRC)
 
 	if err != nil {
 		log.Panicln(err)
 	}
 
 	for {
+		client.RLock()
+		if client.destroyed || client.skip {
+			client.RUnlock()
+			return
+		}
+		client.RUnlock()
+
+		client.pauseWait.L.Lock()
+		for client.pausing {
+			client.pauseWait.Wait()
+		}
+		client.pauseWait.L.Unlock()
+
 		frame, err := encodeSession.OpusFrame()
 		if err != nil {
 			if err != io.EOF {
@@ -89,19 +146,35 @@ func (client *client) encodeSong(url string, options *dca.EncodeOptions) {
 			return
 		}
 
-		client.RLock()
-		if client.destroyed || client.skip {
-			client.RUnlock()
-			return
-		}
-		// if we unlock before send, it might send a frame after the client has been destroyed
-		client.frameData <- frame
-		client.RUnlock()
+		binary.BigEndian.PutUint16(header[2:], sequenceNumber)
+		binary.BigEndian.PutUint32(header[4:], timeStamp)
 
-		client.pauseWait.L.Lock()
-		for client.pausing {
-			client.pauseWait.Wait()
+		copy(nonce[:], header)
+
+		packet := secretbox.Seal(header, frame, &nonce, &client.sessionDescription.SecretKey)
+
+		select {
+		case <-client.ctx.Done():
+			return
+		case <-ticker.C:
 		}
-		client.pauseWait.L.Unlock()
+
+		_, err = client.uc.Write(packet)
+
+		if err != nil {
+			log.Println(err)
+		}
+
+		if (sequenceNumber) == 0xFFFF {
+			sequenceNumber = 0
+		} else {
+			sequenceNumber++
+		}
+
+		if (timeStamp + frameTime) >= 0xFFFFFFFF {
+			timeStamp = 0
+		} else {
+			timeStamp += frameTime
+		}
 	}
 }
