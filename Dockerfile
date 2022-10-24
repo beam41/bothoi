@@ -2,10 +2,12 @@ FROM golang:1.19-alpine AS builder
 
 WORKDIR /usr/src/bothoi
 
+ENV CGO_ENABLED=1
+
 RUN mkdir app
 
 RUN apk update && apk upgrade --no-cache
-RUN apk add --no-cache curl gcc
+RUN apk add --no-cache curl gcc alpine-sdk
 RUN curl -L https://yt-dl.org/downloads/latest/youtube-dl -o /usr/local/bin/youtube-dl
 
 COPY go.mod go.sum ./
