@@ -17,3 +17,11 @@ func Ternary[T any](condition bool, trueVal, falseVal T) T {
 	}
 	return falseVal
 }
+
+func SliceToMap[K comparable, T any](slice []T, keySelector func(int, T) K) map[K]T {
+	mapped := map[K]T{}
+	for i, item := range slice {
+		mapped[keySelector(i, item)] = item
+	}
+	return mapped
+}

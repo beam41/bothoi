@@ -8,7 +8,7 @@ type Activity struct {
 	Url           *string             `json:"url" mapstructure:"url"`
 	CreatedAt     types.UnixTimeStamp `json:"created_at" mapstructure:"created_at"`
 	Timestamps    ActivityTimestamp   `json:"timestamps" mapstructure:"timestamps"`
-	ApplicationId types.Snowflake     `json:"application_id" mapstructure:"application_id"`
+	ApplicationId types.Snowflake     `json:"application_id,string" mapstructure:"application_id"`
 	Details       *string             `json:"details" mapstructure:"details"`
 	State         *string             `json:"state" mapstructure:"state"`
 	Emoji         *ActivityEmoji      `json:"emoji" mapstructure:"emoji"`
@@ -27,7 +27,7 @@ type ActivityTimestamp struct {
 
 type ActivityEmoji struct {
 	Name     string          `json:"name" mapstructure:"name"`
-	Id       types.Snowflake `json:"id" mapstructure:"id"`
+	Id       types.Snowflake `json:"id,string" mapstructure:"id"`
 	Animated bool            `json:"animated" mapstructure:"animated"`
 }
 

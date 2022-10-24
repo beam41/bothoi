@@ -5,19 +5,19 @@ import (
 )
 
 type Guild struct {
-	Id                          types.Snowflake  `json:"id" mapstructure:"id"`
+	Id                          types.Snowflake  `json:"id,string" mapstructure:"id"`
 	Name                        string           `json:"name" mapstructure:"name"`
 	Icon                        *string          `json:"icon" mapstructure:"icon"`
 	IconHash                    *string          `json:"icon_hash" mapstructure:"icon_hash"`
 	Splash                      *string          `json:"splash" mapstructure:"splash"`
 	DiscoverySplash             *string          `json:"discovery_splash" mapstructure:"discovery_splash"`
 	Owner                       bool             `json:"owner" mapstructure:"owner"`
-	OwnerId                     types.Snowflake  `json:"owner_id" mapstructure:"owner_id"`
+	OwnerId                     types.Snowflake  `json:"owner_id,string" mapstructure:"owner_id"`
 	Permissions                 string           `json:"permissions" mapstructure:"permissions"`
-	AfkChannelId                *types.Snowflake `json:"afk_channel_id" mapstructure:"afk_channel_id"`
+	AfkChannelId                *types.Snowflake `json:"afk_channel_id,string" mapstructure:"afk_channel_id"`
 	AfkTimeout                  uint16           `json:"afk_timeout" mapstructure:"afk_timeout"`
 	WidgetEnabled               bool             `json:"widget_enabled" mapstructure:"widget_enabled"`
-	WidgetChannelId             *types.Snowflake `json:"widget_channel_id" mapstructure:"widget_channel_id"`
+	WidgetChannelId             *types.Snowflake `json:"widget_channel_id,string" mapstructure:"widget_channel_id"`
 	VerificationLevel           uint8            `json:"verification_level" mapstructure:"verification_level"`
 	DefaultMessageNotifications uint8            `json:"default_message_notifications" mapstructure:"default_message_notifications"`
 	ExplicitContentFilter       uint8            `json:"explicit_content_filter" mapstructure:"explicit_content_filter"`
@@ -25,10 +25,10 @@ type Guild struct {
 	Emojis                      []Emoji          `json:"emojis" mapstructure:"emojis"`
 	Features                    []string         `json:"features" mapstructure:"features"`
 	MfaLevel                    uint8            `json:"mfa_level" mapstructure:"mfa_level"`
-	ApplicationId               *types.Snowflake `json:"application_id" mapstructure:"application_id"`
-	SystemChannelId             *types.Snowflake `json:"system_channel_id" mapstructure:"system_channel_id"`
+	ApplicationId               *types.Snowflake `json:"application_id,string" mapstructure:"application_id"`
+	SystemChannelId             *types.Snowflake `json:"system_channel_id,string" mapstructure:"system_channel_id"`
 	SystemChannelFlags          uint8            `json:"system_channel_flags" mapstructure:"system_channel_flags"`
-	RulesChannelId              *types.Snowflake `json:"rules_channel_id" mapstructure:"rules_channel_id"`
+	RulesChannelId              *types.Snowflake `json:"rules_channel_id,string" mapstructure:"rules_channel_id"`
 	MaxPresences                *uint32          `json:"max_presences" mapstructure:"max_presences"`
 	MaxMembers                  uint32           `json:"max_members" mapstructure:"max_members"`
 	VanityURLCode               *string          `json:"vanity_url_code" mapstructure:"vanity_url_code"`
@@ -37,7 +37,7 @@ type Guild struct {
 	PremiumTier                 uint8            `json:"premium_tier" mapstructure:"premium_tier"`
 	PremiumSubscriptionCount    uint32           `json:"premium_subscription_count" mapstructure:"premium_subscription_count"`
 	PreferredLocale             string           `json:"preferred_locale" mapstructure:"preferred_locale"`
-	PublicUpdatesChannelId      *types.Snowflake `json:"public_updates_channel_id" mapstructure:"public_updates_channel_id"`
+	PublicUpdatesChannelId      *types.Snowflake `json:"public_updates_channel_id,string" mapstructure:"public_updates_channel_id"`
 	MaxVideoChannelUsers        uint32           `json:"max_video_channel_users" mapstructure:"max_video_channel_users"`
 	ApproximateMemberCount      uint32           `json:"approximate_member_count" mapstructure:"approximate_member_count"`
 	ApproximatePresenceCount    uint32           `json:"approximate_presence_count" mapstructure:"approximate_presence_count"`
@@ -64,5 +64,5 @@ type GuildCreate struct {
 
 type UnavailableGuild struct {
 	Unavailable bool            `json:"unavailable" mapstructure:"unavailable"`
-	Id          types.Snowflake `json:"id" mapstructure:"id"`
+	Id          types.Snowflake `json:"id,string" mapstructure:"id"`
 }

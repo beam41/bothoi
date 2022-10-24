@@ -3,7 +3,7 @@ package discord_models
 import "bothoi/models/types"
 
 type User struct {
-	Id            types.Snowflake `json:"id" mapstructure:"id"`
+	Id            types.Snowflake `json:"id,string" mapstructure:"id"`
 	Username      string          `json:"username" mapstructure:"username"`
 	Discriminator string          `json:"discriminator" mapstructure:"discriminator"`
 	Avatar        *string         `json:"avatar" mapstructure:"avatar"`

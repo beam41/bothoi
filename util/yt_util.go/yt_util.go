@@ -1,19 +1,13 @@
 package yt_util
 
 import (
-	"bothoi/models"
+	"bothoi/util"
 	"bytes"
-	"errors"
 	"fmt"
-	"io"
-	"log"
-	"net/http"
 	"net/url"
 	"os/exec"
 	"regexp"
-	"strconv"
 	"strings"
-	"sync"
 )
 
 func GetYoutubeDownloadUrl(ytId string) (string, error) {
@@ -25,65 +19,6 @@ func GetYoutubeDownloadUrl(ytId string) (string, error) {
 	}
 	urlStr := strings.TrimSpace(string(stdout))
 	return urlStr, nil
-}
-
-func DownloadYt(ytId string) ([]byte, error) {
-	cmd := exec.Command("youtube-dl", "-g", "-f", "bestaudio", "--", ytId)
-
-	stdout, err := cmd.Output()
-	if err != nil {
-		return nil, err
-	}
-	urlStr := strings.TrimSpace(string(stdout))
-
-	// check content length
-	headRes, err := http.Head(urlStr)
-	if err != nil || headRes.StatusCode != http.StatusOK {
-		return nil, err
-	}
-	contentLengthStr := headRes.Header.Get("Content-Length")
-	contentLength, _ := strconv.ParseInt(contentLengthStr, 10, 64)
-	if contentLength == 0 {
-		return nil, errors.New("Content-Length is 0")
-	}
-
-	bytesArr := make([]byte, contentLength)
-
-	const chunkSize = 100000
-	var wg sync.WaitGroup
-
-	// concurrently download chunks
-	for pos := int64(0); pos < contentLength; pos += chunkSize {
-		wg.Add(1)
-		go func(p int64) {
-			defer wg.Done()
-
-			req, err := http.NewRequest("GET", urlStr, nil)
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-
-			req.Header.Set("Range", fmt.Sprintf("bytes=%v-%v", p, p+chunkSize-1))
-			resp, err := http.DefaultClient.Do(req)
-			if err != nil {
-				fmt.Println(err)
-			}
-			defer func(body io.ReadCloser) {
-				err := body.Close()
-				if err != nil {
-					log.Println(err)
-				}
-			}(resp.Body)
-			body, err := io.ReadAll(resp.Body)
-			if err != nil {
-				fmt.Println(err)
-			}
-			copy(bytesArr[p:], body)
-		}(pos)
-	}
-	wg.Wait()
-	return bytesArr, nil
 }
 
 func isYtVidUrl(testUrl string) bool {
@@ -110,7 +45,7 @@ func isYtVidUrl(testUrl string) bool {
 	return false
 }
 
-func SearchYt(searchStr string) (models.SongItem, error) {
+func SearchYt(searchStr string) (title string, ytId string, duration uint32, noResult bool, err error) {
 	var cmd *exec.Cmd
 	if !isYtVidUrl(searchStr) {
 		// add \" to escape quotes in cmd
@@ -121,22 +56,23 @@ func SearchYt(searchStr string) (models.SongItem, error) {
 	}
 	var stdout bytes.Buffer
 	cmd.Stdout = &stdout
-	err := cmd.Run()
+	err = cmd.Run()
 	if err != nil {
-		return models.SongItem{}, err
+		noResult = true
+		return
 	}
 	output := strings.TrimSpace(stdout.String())
 	if output == "" {
-		return models.SongItem{}, errors.New("no results found")
+		noResult = true
+		return
 	}
 	results := strings.Split(output, "\n")
 	if len(results) < 3 {
-		return models.SongItem{}, errors.New("no results found")
+		noResult = true
+		return
 	}
-	return models.SongItem{
-		Title:       results[0],
-		YtId:        results[1],
-		Duration:    results[2],
-		RequesterId: "",
-	}, nil
+	title = results[0]
+	ytId = results[1]
+	duration = util.ConvertVidLengthToSeconds(results[2])
+	return
 }

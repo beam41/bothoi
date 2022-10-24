@@ -14,7 +14,7 @@ func (client *client) dispatchHandler(payload discord_models.GatewayPayload) {
 	switch payload.T {
 	case "READY":
 		var sessionState discord_models.ReadyEvent
-		err := mapstructure.Decode(payload.D, &sessionState)
+		err := mapstructure.WeakDecode(payload.D, &sessionState)
 		if err != nil {
 			log.Println(err)
 			return
@@ -24,7 +24,7 @@ func (client *client) dispatchHandler(payload discord_models.GatewayPayload) {
 		client.info.Unlock()
 	case "INTERACTION_CREATE":
 		var data discord_models.Interaction
-		err := mapstructure.Decode(payload.D, &data)
+		err := mapstructure.WeakDecode(payload.D, &data)
 		if err != nil {
 			log.Println(err)
 			return
@@ -32,34 +32,26 @@ func (client *client) dispatchHandler(payload discord_models.GatewayPayload) {
 		bh_context.GetCommandManager().MapInteractionExecute(&data)
 	case "GUILD_CREATE":
 		var data discord_models.GuildCreate
-		err := mapstructure.Decode(payload.D, &data)
+		err := mapstructure.WeakDecode(payload.D, &data)
 		if err != nil {
 			log.Println(err)
 			return
 		}
-		// guild voice state don't contain guild id
-		repo.AddGuild(&data)
-		var voiceStates []discord_models.VoiceState
-		for _, voiceState := range data.VoiceStates {
-			voiceState.GuildId = data.Id
-			voiceStates = append(voiceStates, voiceState)
-		}
-		repo.AddVoiceStateBulk(voiceStates)
+		repo.UpsertGuild(&data)
 	case "VOICE_STATE_UPDATE":
 		var data = new(discord_models.VoiceState)
-		err := mapstructure.Decode(payload.D, data)
+		err := mapstructure.WeakDecode(payload.D, data)
 		if err != nil {
 			log.Println(err)
 			return
 		}
-		if data.UserId != config.BotId {
-			repo.AddVoiceState(data)
-		} else {
+		repo.UpsertVoiceState(data)
+		if data.UserId == config.BotId {
 			client.returnSessionId(data.GuildId, data.SessionId)
 		}
 	case "VOICE_SERVER_UPDATE":
 		var data discord_models.VoiceServer
-		err := mapstructure.Decode(payload.D, &data)
+		err := mapstructure.WeakDecode(payload.D, &data)
 		if err != nil {
 			log.Println(err)
 			return

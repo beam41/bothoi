@@ -2,7 +2,6 @@ package voice
 
 import (
 	"bothoi/config"
-	"bothoi/models"
 	"bothoi/models/discord_models"
 	"bothoi/models/types"
 	"bothoi/references/voice_opcode"
@@ -28,9 +27,7 @@ type client struct {
 	ctx                context.Context
 	ctxCancel          context.CancelFunc
 	guildId            types.Snowflake
-	voiceChannelId     types.Snowflake
 	sessionId          *string
-	songQueue          []*models.SongItem
 	voiceServer        *discord_models.VoiceServer
 	c                  *websocket.Conn
 	uc                 *net.UDPConn
@@ -114,7 +111,7 @@ func (client *client) connect() {
 				heartbeatAcked <- n
 			case voice_opcode.Ready:
 				var data discord_models.UDPInfo
-				err := mapstructure.Decode(payload.D, &data)
+				err := mapstructure.WeakDecode(payload.D, &data)
 				if err != nil {
 					log.Println(err)
 					continue
@@ -127,7 +124,7 @@ func (client *client) connect() {
 				go client.connectUdp()
 			case voice_opcode.SessionDescription:
 				var data discord_models.SessionDescription
-				err := mapstructure.Decode(payload.D, &data)
+				err := mapstructure.WeakDecode(payload.D, &data)
 				if err != nil {
 					log.Println(err)
 					continue

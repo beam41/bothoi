@@ -26,3 +26,6 @@ config/*
 
 # my discord json ref
 ref/
+
+# sqlite database
+database.db

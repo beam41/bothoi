@@ -1,3 +1,3 @@
 package types
 
-type Snowflake string
+type Snowflake uint64

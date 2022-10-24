@@ -3,7 +3,7 @@ package discord_models
 import "bothoi/models/types"
 
 type Role struct {
-	Id           types.Snowflake `json:"id" mapstructure:"id"`
+	Id           types.Snowflake `json:"id,string" mapstructure:"id"`
 	Name         string          `json:"name" mapstructure:"name"`
 	Color        uint32          `json:"color" mapstructure:"color"`
 	Hoist        bool            `json:"hoist" mapstructure:"hoist"`
@@ -17,7 +17,7 @@ type Role struct {
 }
 
 type RoleTags struct {
-	BotId             *types.Snowflake `json:"bot_id" mapstructure:"bot_id"`
-	IntegrationId     *types.Snowflake `json:"integration_id" mapstructure:"integration_id"`
+	BotId             *types.Snowflake `json:"bot_id,string" mapstructure:"bot_id"`
+	IntegrationId     *types.Snowflake `json:"integration_id,string" mapstructure:"integration_id"`
 	PremiumSubscriber bool             `json:"premium_subscriber" mapstructure:"premium_subscriber"`
 }

@@ -10,6 +10,7 @@ import (
 	"bothoi/util/http_util"
 	"fmt"
 	"log"
+	"strconv"
 	"strings"
 )
 
@@ -21,7 +22,7 @@ func executePause(data *discord_models.Interaction) {
 	// do response to interaction
 	defer func() {
 		url := config.InteractionResponseEndpoint
-		url = strings.Replace(url, "<interaction_id>", string(data.Id), 1)
+		url = strings.Replace(url, "<interaction_id>", strconv.FormatUint(uint64(data.Id), 10), 1)
 		url = strings.Replace(url, "<interaction_token>", data.Token, 1)
 
 		_, err := http_util.PostJson(url, response)
@@ -29,12 +30,12 @@ func executePause(data *discord_models.Interaction) {
 			log.Println(err)
 		}
 	}()
-	userVoiceState := repo.GetVoiceState(data.Member.User.Id)
-	clientVoiceChannel := bh_context.GetVoiceClientManager().GetVoiceChannelId(data.GuildId)
-	if userVoiceState == nil || *userVoiceState.ChannelId != clientVoiceChannel {
+	userVoiceChannel := repo.GetChannelIdByUserIdAndGuildId(data.Member.User.Id, data.GuildId)
+	clientVoiceChannel := repo.GetChannelIdByUserIdAndGuildId(config.BotId, data.GuildId)
+	if userVoiceChannel == nil || userVoiceChannel != clientVoiceChannel {
 		response = util.BuildPlayerResponse(
 			"Pause error",
-			fmt.Sprintf("<@%s> not in same voice channel as Bothoi", data.Member.User.Id),
+			fmt.Sprintf("<@%d> not in same voice channel as Bothoi", data.Member.User.Id),
 			"error",
 			embed_color.Error,
 		)
@@ -53,14 +54,14 @@ func executePause(data *discord_models.Interaction) {
 	if pausing {
 		response = util.BuildPlayerResponse(
 			"Paused",
-			"Paused by the request of <@"+string(data.Member.User.Id)+">",
+			"Paused by the request of <@"+strconv.FormatUint(uint64(data.Member.User.Id), 10)+">",
 			"/resume to resume",
 			embed_color.Default,
 		)
 	} else {
 		response = util.BuildPlayerResponse(
 			"Resumed",
-			"Resumed by the request of <@"+string(data.Member.User.Id)+">",
+			"Resumed by the request of <@"+strconv.FormatUint(uint64(data.Member.User.Id), 10)+">",
 			"",
 			embed_color.Default,
 		)

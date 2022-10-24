@@ -2,8 +2,8 @@ package voice
 
 import (
 	"bothoi/config"
-	"bothoi/models"
 	"bothoi/models/discord_models"
+	"bothoi/repo"
 	"bothoi/util/yt_util.go"
 	"crypto/rand"
 	"encoding/binary"
@@ -40,7 +40,18 @@ func (client *client) play() {
 
 	// run player
 	for {
-		currentSong := client.songQueue[0]
+		currentSong, notFound, err := repo.GetNextSong(client.guildId)
+		if notFound {
+			// stop player
+			client.Lock()
+			client.playerRunning = false
+			client.Unlock()
+			go client.waitForExit()
+			return
+		} else if err != nil {
+			log.Println(err)
+			continue
+		}
 		log.Println(client.guildId, "Playing song: ", currentSong.Title)
 		url, err := yt_util.GetYoutubeDownloadUrl(currentSong.YtId)
 		if err != nil {
@@ -50,6 +61,7 @@ func (client *client) play() {
 
 		client.Lock()
 		client.playing = true
+		_ = repo.UpdateSongPlaying(currentSong.Id)
 		if client.isWaitForExit {
 			client.isWaitForExit = false
 			client.stopWaitForExit <- struct{}{}
@@ -65,17 +77,8 @@ func (client *client) play() {
 		}
 		client.skip = false
 		client.playing = false
-		if len(client.songQueue) > 1 {
-			client.songQueue = client.songQueue[1:]
-			client.Unlock()
-		} else {
-			// stop player
-			client.songQueue = []*models.SongItem{}
-			client.playerRunning = false
-			client.Unlock()
-			go client.waitForExit()
-			return
-		}
+		client.Unlock()
+		_ = repo.DeleteSong(currentSong.Id)
 	}
 }
 

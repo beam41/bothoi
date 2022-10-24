@@ -3,12 +3,12 @@ package discord_models
 import "bothoi/models/types"
 
 type Interaction struct {
-	Id            types.Snowflake `json:"id" mapstructure:"id"`
-	ApplicationId types.Snowflake `json:"application_id" mapstructure:"application_id"`
+	Id            types.Snowflake `json:"id,string" mapstructure:"id"`
+	ApplicationId types.Snowflake `json:"application_id,string" mapstructure:"application_id"`
 	Type          uint8           `json:"type" mapstructure:"type"`
 	Data          InteractionData `json:"data" mapstructure:"data"`
-	GuildId       types.Snowflake `json:"guild_id" mapstructure:"guild_id"`
-	ChannelId     types.Snowflake `json:"channel_id" mapstructure:"channel_id"`
+	GuildId       types.Snowflake `json:"guild_id,string" mapstructure:"guild_id"`
+	ChannelId     types.Snowflake `json:"channel_id,string" mapstructure:"channel_id"`
 	Member        GuildMember     `json:"member" mapstructure:"member"`
 	Token         string          `json:"token" mapstructure:"token"`
 	Version       uint8           `json:"version" mapstructure:"version"`
@@ -17,7 +17,7 @@ type Interaction struct {
 }
 
 type InteractionData struct {
-	Id      types.Snowflake     `json:"id" mapstructure:"id"`
+	Id      types.Snowflake     `json:"id,string" mapstructure:"id"`
 	Name    string              `json:"name" mapstructure:"name"`
 	Options []InteractionOption `json:"options" mapstructure:"options"`
 	Type    uint8               `json:"type" mapstructure:"type"`
