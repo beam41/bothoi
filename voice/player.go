@@ -71,7 +71,8 @@ func (client *client) play() {
 		}
 		client.Unlock()
 
-		client.sendSong(url, options)
+		options.StartTime = int(currentSong.Seek)
+		client.playTillComplete(url, options)
 
 		client.Lock()
 		if client.destroyed {
@@ -85,15 +86,25 @@ func (client *client) play() {
 	}
 }
 
-func (client *client) sendSong(url string, options *dca.EncodeOptions) {
+func (client *client) playTillComplete(url string, options *dca.EncodeOptions) {
+	encodeSession, err := dca.EncodeFile(url, options)
+	if err != nil {
+		return
+	}
+	defer encodeSession.Cleanup()
+	for {
+		if client.sendSong(encodeSession) {
+			return
+		}
+	}
+}
+
+func (client *client) sendSong(encodeSession *dca.EncodeSession) bool {
 	client.udpReadyWait.L.Lock()
 	for !client.udpReady {
 		client.udpReadyWait.Wait()
 	}
 	client.udpReadyWait.L.Unlock()
-
-	encodeSession, err := dca.EncodeFile(url, options)
-	defer encodeSession.Cleanup()
 
 	frameTime := uint32(config.DcaFramerate * config.DcaFrameduration / 1000)
 	ticker := time.NewTicker(time.Millisecond * time.Duration(config.DcaFrameduration))
@@ -134,7 +145,7 @@ func (client *client) sendSong(url string, options *dca.EncodeOptions) {
 		client.RLock()
 		if client.destroyed || client.skip {
 			client.RUnlock()
-			return
+			return true
 		}
 		client.RUnlock()
 
@@ -149,7 +160,7 @@ func (client *client) sendSong(url string, options *dca.EncodeOptions) {
 			if err != io.EOF {
 				log.Println("encodeSession error", err)
 			}
-			return
+			return true
 		}
 
 		binary.BigEndian.PutUint16(header[2:], sequenceNumber)
@@ -160,15 +171,17 @@ func (client *client) sendSong(url string, options *dca.EncodeOptions) {
 		packet := secretbox.Seal(header, frame, &nonce, &client.sessionDescription.SecretKey)
 
 		select {
+		case <-client.vcCtx.Done():
+			return false
 		case <-client.ctx.Done():
-			return
+			return true
 		case <-ticker.C:
 		}
 
 		_, err = client.uc.Write(packet)
 
 		if err != nil {
-			log.Println(err)
+			log.Println("play error", err)
 		}
 
 		if (sequenceNumber) == 0xFFFF {

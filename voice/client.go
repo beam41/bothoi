@@ -129,9 +129,13 @@ func (client *client) connection() {
 			if err != nil {
 				client.RLock()
 				if !client.destroyed {
+					client.RUnlock()
 					log.Println(err)
+					return
 				}
 				client.RUnlock()
+				log.Println(client.guildId, "Error, attempt to reconnect")
+				client.voiceRestart()
 				return
 			}
 			if config.Development {
@@ -173,6 +177,8 @@ func (client *client) connection() {
 				client.udpReadyWait.L.Unlock()
 			case voice_opcode.Resumed:
 				log.Println("Resumed")
+				client.udpReady = false
+				client.connectUdp()
 			}
 		}
 	}()
@@ -312,6 +318,8 @@ func (client *client) udpKeepAlive(i time.Duration) {
 		}
 
 		select {
+		case <-client.vcCtx.Done():
+			return
 		case <-client.ctx.Done():
 			return
 		case <-ticker.C:

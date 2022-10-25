@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func AddSongToQueue(guildId, requesterId types.Snowflake, ytId, title string, duration uint32) error {
+func AddSongToQueue(guildId, requesterId types.Snowflake, ytId, title string, duration, seek uint32) error {
 	result := db.Create(&db_models.Song{
 		GuildId:     guildId,
 		RequesterId: requesterId,
@@ -14,6 +14,7 @@ func AddSongToQueue(guildId, requesterId types.Snowflake, ytId, title string, du
 		YtId:        ytId,
 		Title:       title,
 		Duration:    duration,
+		Seek:        seek,
 	})
 	return result.Error
 }

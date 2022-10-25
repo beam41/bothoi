@@ -81,8 +81,11 @@ func executePlay(data *discord_models.Interaction) {
 		)
 		return
 	}
-
-	err = repo.AddSongToQueue(data.GuildId, data.Member.User.Id, ytId, title, duration)
+	seek := uint32(0)
+	if s, ok := options["seek"]; ok {
+		seek = util.ConvertVidLengthToSeconds(s.Value.(string))
+	}
+	err = repo.AddSongToQueue(data.GuildId, data.Member.User.Id, ytId, title, duration, seek)
 	if err != nil {
 		log.Println(err)
 		response = util.BuildPlayerResponseData(

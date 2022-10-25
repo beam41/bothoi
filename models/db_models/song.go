@@ -14,6 +14,7 @@ type Song struct {
 	YtId        string
 	Title       string
 	Duration    uint32
+	Seek        uint32
 	Playing     bool
 	Deleted     gorm.DeletedAt
 }
