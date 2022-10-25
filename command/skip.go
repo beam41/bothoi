@@ -31,7 +31,7 @@ func executeSkip(data *discord_models.Interaction) {
 	}()
 	userVoiceChannel := repo.GetChannelIdByUserIdAndGuildId(data.Member.User.Id, data.GuildId)
 	clientVoiceChannel := repo.GetChannelIdByUserIdAndGuildId(config.BotId, data.GuildId)
-	if userVoiceChannel == nil || (clientVoiceChannel == nil && *userVoiceChannel != *clientVoiceChannel) {
+	if userVoiceChannel == nil || (clientVoiceChannel != nil && *userVoiceChannel != *clientVoiceChannel) {
 		response = util.BuildPlayerResponse(
 			"Skip error",
 			fmt.Sprintf("<@%d> not in same voice channel as Bothoi", data.Member.User.Id),

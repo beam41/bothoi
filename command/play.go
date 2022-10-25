@@ -72,7 +72,7 @@ func executePlay(data *discord_models.Interaction) {
 	}
 
 	clientVoiceChannel := repo.GetChannelIdByUserIdAndGuildId(data.Member.User.Id, config.BotId)
-	if userVoiceChannel == nil || (clientVoiceChannel == nil && *userVoiceChannel != *clientVoiceChannel) {
+	if userVoiceChannel == nil || (clientVoiceChannel != nil && *userVoiceChannel != *clientVoiceChannel) {
 		response = util.BuildPlayerResponseData(
 			"Can't play a song :(",
 			fmt.Sprintf("<@%d> not in the same voice channel as bot", data.Member.User.Id),
