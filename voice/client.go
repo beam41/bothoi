@@ -46,6 +46,9 @@ type client struct {
 	isWaitForExit      bool
 	stopWaitForExit    chan struct{}
 	clm                *clientManager
+	vcCtx              context.Context
+	vcCtxCancel        context.CancelFunc
+	resume             bool
 }
 
 func (client *client) connWriteJSON(v any) (err error) {
@@ -54,7 +57,29 @@ func (client *client) connWriteJSON(v any) (err error) {
 	return
 }
 
+func (client *client) voiceRestart() {
+	err := client.c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(4009, ""))
+	if err != nil {
+		log.Println(err)
+	}
+	client.Lock()
+	client.resume = true
+	client.Unlock()
+}
+
 func (client *client) connect() {
+	for {
+		if client.destroyed {
+			return
+		}
+		ctx, cancel := context.WithCancel(context.Background())
+		client.vcCtx = ctx
+		client.vcCtxCancel = cancel
+		client.connection()
+	}
+}
+
+func (client *client) connection() {
 	// only connect once
 	client.Lock()
 	if client.running {
@@ -63,6 +88,11 @@ func (client *client) connect() {
 	}
 	client.running = true
 	client.Unlock()
+	defer func() {
+		client.Lock()
+		client.running = false
+		client.Unlock()
+	}()
 
 	c, _, err := websocket.DefaultDialer.Dial("wss://"+client.voiceServer.Endpoint+"?v="+config.VoiceGatewayVersion, nil)
 	if err != nil {
@@ -76,9 +106,16 @@ func (client *client) connect() {
 		}
 	}(c)
 
-	err = client.connWriteJSON(discord_models.NewVoiceIdentify(client.guildId, config.BotId, *client.sessionId, client.voiceServer.Token))
-	if err != nil {
-		log.Println(err)
+	if !client.resume {
+		err = client.connWriteJSON(discord_models.NewVoiceIdentify(client.guildId, config.BotId, *client.sessionId, client.voiceServer.Token))
+		if err != nil {
+			log.Println(err)
+		}
+	} else {
+		err = client.connWriteJSON(discord_models.NewVoiceResume(client.guildId, *client.sessionId, client.voiceServer.Token))
+		if err != nil {
+			log.Println(err)
+		}
 	}
 
 	heartbeatInterval := make(chan int)
@@ -134,6 +171,8 @@ func (client *client) connect() {
 				client.udpReady = true
 				client.udpReadyWait.Signal()
 				client.udpReadyWait.L.Unlock()
+			case voice_opcode.Resumed:
+				log.Println("Resumed")
 			}
 		}
 	}()
@@ -146,7 +185,13 @@ func (client *client) connect() {
 	defer heartbeatIntervalTicker.Stop()
 
 	for {
-		<-heartbeatIntervalTicker.C
+		select {
+		case <-heartbeatIntervalTicker.C:
+		case <-client.ctx.Done():
+			return
+		case <-client.vcCtx.Done():
+			return
+		}
 
 		randNum, err := rand.Int(rand.Reader, big.NewInt(math.MaxInt64))
 		if err != nil {
@@ -175,23 +220,12 @@ func (client *client) connect() {
 				return
 			}
 		case <-heartbeatIntervalTicker.C:
-			// uh oh timeout, goodbye
 			log.Println(client.guildId, "Timeout")
-			err := client.clm.StopClient(client.guildId)
-			if err != nil {
-				log.Println(err)
-			}
-			err = c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(4009, ""))
-			if err != nil {
-				log.Println(err)
-			}
+			client.voiceRestart()
 			return
 		case <-client.ctx.Done():
-			log.Println(client.guildId, "Done")
-			err := c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(1000, ""))
-			if err != nil {
-				log.Println(err)
-			}
+			return
+		case <-client.vcCtx.Done():
 			return
 		}
 	}
@@ -270,7 +304,10 @@ func (client *client) udpKeepAlive(i time.Duration) {
 		_, err := client.uc.Write(packet)
 		if err != nil {
 			log.Println(err)
-			client.ctxCancel()
+			err := client.clm.StopClient(client.guildId)
+			if err != nil {
+				log.Println(err)
+			}
 			return
 		}
 
@@ -292,7 +329,7 @@ func (client *client) waitForExit() {
 
 	idleTimeoutCountdown := time.NewTimer(config.IdleTimeout)
 	defer func() {
-		//clean timer just in case
+		// clean timer just in case
 		if !idleTimeoutCountdown.Stop() {
 			select {
 			case <-idleTimeoutCountdown.C:
@@ -319,5 +356,12 @@ func (client *client) waitForExit() {
 			client.RUnlock()
 			return
 		}
+	}
+}
+
+func (client *client) closeConnection() {
+	err := client.c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(1000, ""))
+	if err != nil {
+		log.Println(err)
 	}
 }

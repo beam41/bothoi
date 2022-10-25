@@ -6,11 +6,11 @@ import (
 	"bothoi/models/discord_models"
 	"bothoi/models/types"
 	"bothoi/references/gateway_opcode"
+	"context"
 	"encoding/json"
 	"github.com/gorilla/websocket"
 	"log"
 	"math/rand"
-	"strings"
 	"sync"
 	"time"
 )
@@ -21,8 +21,10 @@ type voiceInstantiateChan struct {
 }
 
 type client struct {
-	conn *websocket.Conn
-	info struct {
+	conn      *websocket.Conn
+	ctx       context.Context
+	ctxCancel context.CancelFunc
+	info      struct {
 		sync.RWMutex
 		sequenceNumber *uint64
 		session        *discord_models.ReadyEvent
@@ -31,6 +33,7 @@ type client struct {
 		sync.RWMutex
 		list map[types.Snowflake]voiceInstantiateChan
 	}
+	resume bool
 }
 
 func NewClient() gateway_interface.ClientInterface {
@@ -54,22 +57,25 @@ func (client *client) gatewayConnWriteJSON(v any) (err error) {
 }
 
 func (client *client) gatewayConnCloseRestart() {
+	client.ctxCancel()
 	err := client.conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseServiceRestart, ""))
 	if err != nil {
 		log.Println(err)
 	}
+	client.resume = true
 }
 
 // connect to the discord gateway.
 func (client *client) Connect() {
-	resume := false
 	for {
-		client.connection(resume)
-		resume = true
+		ctx, cancel := context.WithCancel(context.Background())
+		client.ctx = ctx
+		client.ctxCancel = cancel
+		client.connection()
 	}
 }
 
-func (client *client) connection(isResume bool) {
+func (client *client) connection() {
 	c, _, err := websocket.DefaultDialer.Dial(config.GatewayUrl, nil)
 	client.conn = c
 	if err != nil {
@@ -82,14 +88,16 @@ func (client *client) connection(isResume bool) {
 		}
 	}()
 
-	if !isResume {
+	if !client.resume {
 		err := client.gatewayConnWriteJSON(discord_models.NewIdentify())
 		if err != nil {
 			log.Println(err)
 		}
 	} else {
 		client.info.RLock()
-		err := client.gatewayConnWriteJSON(discord_models.NewResume(client.info.sequenceNumber, client.info.session.SessionId))
+		v := discord_models.NewResume(client.info.sequenceNumber, client.info.session.SessionId)
+		log.Println("outgoing: ", v)
+		err := client.conn.WriteJSON(v)
 		client.info.RUnlock()
 		if err != nil {
 			log.Println(err)
@@ -107,14 +115,13 @@ func (client *client) connection(isResume bool) {
 			err := client.gatewayConnReadJSON(&payload)
 			if err != nil {
 				log.Println(err)
-				if strings.HasPrefix(err.Error(), "websocket: close 1001") {
-					err := client.gatewayConnWriteJSON(discord_models.NewIdentify())
-					if err != nil {
-						log.Println(err)
-						return
-					}
+				if websocket.IsUnexpectedCloseError(err, 1001, 4004, 4010, 4011, 4012, 4013, 4014) {
+					client.ctxCancel()
+					return
+				} else {
+					client.gatewayConnCloseRestart()
+					return
 				}
-				continue
 			}
 			if config.Development {
 				jsonDat, _ := json.Marshal(payload)
@@ -140,9 +147,12 @@ func (client *client) connection(isResume bool) {
 			case gateway_opcode.Dispatch:
 				go client.dispatchHandler(payload)
 			case gateway_opcode.Reconnect:
-				fallthrough
-			case gateway_opcode.InvalidSession:
 				client.gatewayConnCloseRestart()
+				return
+			case gateway_opcode.InvalidSession:
+				if payload.D.(bool) {
+					client.gatewayConnCloseRestart()
+				}
 				return
 			}
 		}
@@ -161,6 +171,8 @@ func (client *client) connection(isResume bool) {
 	for {
 		// wait for heartbeat ack
 		select {
+		case <-client.ctx.Done():
+			return
 		case <-heartbeatAcked:
 		case <-heartbeatIntervalTicker.C:
 			// uh oh timeout, reconnect
@@ -171,6 +183,8 @@ func (client *client) connection(isResume bool) {
 
 		// wait for next heartbeat
 		select {
+		case <-client.ctx.Done():
+			return
 		case <-immediateHeartbeat:
 		case <-heartbeatIntervalTicker.C:
 		}

@@ -80,6 +80,17 @@ func NewVoiceIdentify(guildId, userId types.Snowflake, sessionId, token string) 
 	}
 }
 
+func NewVoiceResume(guildId types.Snowflake, sessionId, token string) VoiceGatewayPayload {
+	return VoiceGatewayPayload{
+		Op: 7,
+		D: map[string]any{
+			"server_id":  guildId,
+			"session_id": sessionId,
+			"token":      token,
+		},
+	}
+}
+
 func NewVoiceHeartbeat(s int64) VoiceGatewayPayload {
 	x := strconv.FormatInt(s, 10)
 	return VoiceGatewayPayload{

@@ -51,6 +51,9 @@ func (client *client) play() {
 		} else if err != nil {
 			log.Println(err)
 			continue
+		} else if currentSong.Playing {
+			_ = repo.DeleteSong(currentSong.Id)
+			continue
 		}
 		log.Println(client.guildId, "Playing song: ", currentSong.Title)
 		url, err := yt_util.GetYoutubeDownloadUrl(currentSong.YtId)

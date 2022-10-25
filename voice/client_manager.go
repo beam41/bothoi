@@ -4,6 +4,7 @@ import (
 	"bothoi/bh_context"
 	"bothoi/models/discord_models"
 	"bothoi/models/types"
+	"bothoi/repo"
 	"bothoi/voice/voice_interface"
 	"context"
 	"errors"
@@ -56,6 +57,7 @@ func (clm *clientManager) removeClient(guildId types.Snowflake) error {
 	client.udpReadyWait.Broadcast()
 	client.pauseWait.Broadcast()
 	client.ctxCancel()
+	client.closeConnection()
 	delete(clm.list, guildId)
 	return nil
 }
@@ -135,6 +137,7 @@ func (clm *clientManager) StartClient(guildId, channelId types.Snowflake) error 
 
 // StopClient remove client from list and properly leave
 func (clm *clientManager) StopClient(guildId types.Snowflake) error {
+	_ = repo.DeleteSongsInGuild(guildId)
 	err := clm.removeClient(guildId)
 	if err != nil {
 		return err
