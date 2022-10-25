@@ -1,0 +1,10 @@
+.gitignore
+database.db
+*_test.go
+config.zip
+Dockerfile
+build.bat
+run.bat
+command_register/
+.git/
+.idea/

@@ -29,3 +29,5 @@ ref/
 
 # sqlite database
 database.db
+
+config.zip
