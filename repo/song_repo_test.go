@@ -81,7 +81,7 @@ func Test_GetNextSong(t *testing.T) {
 		RequestedAt: time.Unix(1000, 0),
 	})
 
-	result, _, _ := GetNextSong(12)
+	result, _ := GetNextSong(12)
 	expected := "This"
 
 	if result.Title != expected {

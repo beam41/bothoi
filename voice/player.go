@@ -40,8 +40,8 @@ func (client *client) play() {
 
 	// run player
 	for {
-		currentSong, notFound, err := repo.GetNextSong(client.guildId)
-		if notFound {
+		currentSong, err := repo.GetNextSong(client.guildId)
+		if currentSong == nil {
 			// stop player
 			client.Lock()
 			client.playerRunning = false

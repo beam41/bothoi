@@ -3,8 +3,6 @@ package repo
 import (
 	"bothoi/models/db_models"
 	"bothoi/models/types"
-	"errors"
-	"gorm.io/gorm"
 	"time"
 )
 
@@ -48,13 +46,18 @@ func DeleteSongsInGuild(guildId types.Snowflake) error {
 	return result.Error
 }
 
-func GetNextSong(guildId types.Snowflake) (db_models.Song, bool, error) {
+func GetNextSong(guildId types.Snowflake) (*db_models.Song, error) {
 	var song db_models.Song
 	result := db.
 		Where(map[string]interface{}{"guild_id": guildId}).
 		Order("requested_at").
-		Take(&song)
-	return song, errors.Is(result.Error, gorm.ErrRecordNotFound), result.Error
+		Limit(1).
+		Find(&song)
+	if result.RowsAffected == 0 {
+		return nil, result.Error
+	} else {
+		return &song, result.Error
+	}
 }
 
 func UpdateSongPlaying(id uint32) error {
