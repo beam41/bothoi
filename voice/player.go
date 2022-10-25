@@ -181,7 +181,10 @@ func (client *client) sendSong(encodeSession *dca.EncodeSession) bool {
 		_, err = client.uc.Write(packet)
 
 		if err != nil {
-			log.Println("play error", err)
+			log.Println(client.guildId, "player udp err", err)
+			client.voiceRestart()
+			return false
+
 		}
 
 		if (sequenceNumber) == 0xFFFF {

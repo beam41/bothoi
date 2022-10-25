@@ -58,9 +58,10 @@ func (client *client) connWriteJSON(v any) (err error) {
 }
 
 func (client *client) voiceRestart() {
+	client.vcCtxCancel()
 	err := client.c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(4009, ""))
 	if err != nil {
-		log.Println(err)
+		log.Println(client.guildId, err)
 	}
 	client.Lock()
 	client.resume = true
@@ -99,22 +100,22 @@ func (client *client) connection() {
 		log.Fatalln(err)
 	}
 	client.c = c
-	defer func(c *websocket.Conn) {
+	defer func() {
 		err := c.Close()
 		if err != nil {
-			log.Println(err)
+			log.Println(client.guildId, err)
 		}
-	}(c)
+	}()
 
 	if !client.resume {
 		err = client.connWriteJSON(discord_models.NewVoiceIdentify(client.guildId, config.BotId, *client.sessionId, client.voiceServer.Token))
 		if err != nil {
-			log.Println(err)
+			log.Println(client.guildId, err)
 		}
 	} else {
 		err = client.connWriteJSON(discord_models.NewVoiceResume(client.guildId, *client.sessionId, client.voiceServer.Token))
 		if err != nil {
-			log.Println(err)
+			log.Println(client.guildId, err)
 		}
 	}
 
@@ -130,7 +131,7 @@ func (client *client) connection() {
 				client.RLock()
 				if !client.destroyed {
 					client.RUnlock()
-					log.Println(err)
+					log.Println(client.guildId, "read err", err)
 					return
 				}
 				client.RUnlock()
@@ -309,11 +310,8 @@ func (client *client) udpKeepAlive(i time.Duration) {
 
 		_, err := client.uc.Write(packet)
 		if err != nil {
-			log.Println(err)
-			err := client.clm.StopClient(client.guildId)
-			if err != nil {
-				log.Println(err)
-			}
+			log.Println(client.guildId, "Udp err", err)
+			client.voiceRestart()
 			return
 		}
 
