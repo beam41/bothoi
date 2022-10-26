@@ -63,14 +63,15 @@ func (client *client) voiceRestart() {
 			log.Println("voiceRestart panic occurred:", err)
 		}
 	}()
+	client.Lock()
+	client.udpReady = false
+	client.resume = true
+	client.Unlock()
 	client.vcCtxCancel()
 	err := client.c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(4009, ""))
 	if err != nil {
 		log.Println(client.guildID, err)
 	}
-	client.Lock()
-	client.resume = true
-	client.Unlock()
 }
 
 func (client *client) connect() {
@@ -188,7 +189,6 @@ func (client *client) connection() {
 				client.udpReadyWait.L.Unlock()
 			case voice_opcode.Resumed:
 				log.Println("Resumed")
-				client.udpReady = false
 				client.connectUdp()
 			}
 		}
