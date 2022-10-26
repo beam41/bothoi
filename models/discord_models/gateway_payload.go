@@ -45,7 +45,7 @@ func NewIdentify() GatewayPayload {
 	}
 }
 
-func NewResume(s *uint64, sessionId types.Snowflake) GatewayPayload {
+func NewResume(s *uint64, sessionId string) GatewayPayload {
 	return GatewayPayload{
 		Op: gateway_opcode.Resume,
 		D: map[string]any{
