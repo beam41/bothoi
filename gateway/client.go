@@ -89,12 +89,12 @@ func (client *client) connection() {
 	c, _, err := websocket.DefaultDialer.Dial(config.GatewayUrl, nil)
 	client.conn = c
 	if err != nil {
-		log.Fatalln(err)
+		log.Panicln(err)
 	}
 	defer func() {
 		err := client.conn.Close()
 		if err != nil {
-			log.Fatalln(err)
+			log.Panicln(err)
 		}
 	}()
 

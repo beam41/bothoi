@@ -12,7 +12,7 @@ var db *gorm.DB
 func StartDb() {
 	db_, err := gorm.Open(sqlite.Open("database.db"), &gorm.Config{})
 	if err != nil {
-		log.Fatalln("failed to connect database")
+		log.Panicln("failed to connect database")
 	}
 	db = db_
 
@@ -26,7 +26,7 @@ func StartDb() {
 		&db_models.Song{},
 	)
 	if err != nil {
-		log.Fatalln("Unable to migrate")
+		log.Panicln("Unable to migrate")
 	}
 
 	// clean up before get new value from GUILD_CREATE
