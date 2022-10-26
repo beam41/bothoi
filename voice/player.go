@@ -49,7 +49,7 @@ func (client *client) play() {
 			go client.waitForExit()
 			return
 		} else if err != nil {
-			log.Println(err)
+			log.Println(client.guildID, err)
 			continue
 		} else if currentSong.Playing {
 			_ = repo.DeleteSong(currentSong.ID)
@@ -58,7 +58,7 @@ func (client *client) play() {
 		log.Println(client.guildID, "Playing song: ", currentSong.Title)
 		url, err := yt_util.GetYoutubeDownloadUrl(currentSong.YtID)
 		if err != nil {
-			log.Println(err)
+			log.Println(client.guildID, err)
 			continue
 		}
 
@@ -113,20 +113,20 @@ func (client *client) sendSong(encodeSession *dca.EncodeSession) bool {
 	if !client.speaking {
 		err := client.connWriteJSON(discord_models.NewVoiceSpeaking(client.udpInfo.SSRC))
 		if err != nil {
-			log.Println(err)
+			log.Println(client.guildID, err)
 		}
 	}
 	client.RUnlock()
 
 	randNum, err := rand.Int(rand.Reader, big.NewInt(math.MaxInt64))
 	if err != nil {
-		log.Println(err)
+		log.Println(client.guildID, err)
 	}
 	sequenceNumber := uint16(randNum.Uint64())
 
 	randNum, err = rand.Int(rand.Reader, big.NewInt(math.MaxInt64))
 	if err != nil {
-		log.Println(err)
+		log.Println(client.guildID, err)
 	}
 	timeStamp := uint32(randNum.Uint64())
 
@@ -138,7 +138,7 @@ func (client *client) sendSong(encodeSession *dca.EncodeSession) bool {
 	binary.BigEndian.PutUint32(header[8:], client.udpInfo.SSRC)
 
 	if err != nil {
-		log.Panicln(err)
+		log.Panicln(client.guildID, err)
 	}
 
 	for {
@@ -158,7 +158,7 @@ func (client *client) sendSong(encodeSession *dca.EncodeSession) bool {
 		frame, err := encodeSession.OpusFrame()
 		if err != nil {
 			if err != io.EOF {
-				log.Println("encodeSession error", err)
+				log.Println(client.guildID, "encodeSession error", err)
 			}
 			return true
 		}
