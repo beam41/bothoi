@@ -111,7 +111,7 @@ func (clm *clientManager) StartClient(guildID, channelID types.Snowflake) error 
 	}
 	clm.RUnlock()
 
-	log.Println(client.guildID, "Starting client")
+	log.Println(guildID, "Starting client")
 	client = clm.createClient(guildID)
 	sessionIDChan := make(chan string)
 	voiceServerChan := make(chan *discord_models.VoiceServer)
