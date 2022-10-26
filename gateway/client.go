@@ -57,6 +57,11 @@ func (client *client) gatewayConnWriteJSON(v any) (err error) {
 }
 
 func (client *client) gatewayConnCloseRestart() {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Println("gatewayConnCloseRestart panic occurred:", err)
+		}
+	}()
 	client.ctxCancel()
 	err := client.conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseServiceRestart, ""))
 	if err != nil {
@@ -76,6 +81,11 @@ func (client *client) Connect() {
 }
 
 func (client *client) connection() {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Println("gateway connection panic occurred:", err)
+		}
+	}()
 	c, _, err := websocket.DefaultDialer.Dial(config.GatewayUrl, nil)
 	client.conn = c
 	if err != nil {

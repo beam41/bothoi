@@ -58,6 +58,11 @@ func (client *client) connWriteJSON(v any) (err error) {
 }
 
 func (client *client) voiceRestart() {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Println("voiceRestart panic occurred:", err)
+		}
+	}()
 	client.vcCtxCancel()
 	err := client.c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(4009, ""))
 	if err != nil {
@@ -81,6 +86,11 @@ func (client *client) connect() {
 }
 
 func (client *client) connection() {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Println("voice connection panic occurred:", err)
+		}
+	}()
 	// only connect once
 	client.Lock()
 	if client.running {
@@ -97,7 +107,7 @@ func (client *client) connection() {
 
 	c, _, err := websocket.DefaultDialer.Dial("wss://"+client.voiceServer.Endpoint+"?v="+config.VoiceGatewayVersion, nil)
 	if err != nil {
-		log.Fatalln(err)
+		log.Panicln(err)
 	}
 	client.c = c
 	defer func() {
