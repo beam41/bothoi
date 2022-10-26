@@ -11,7 +11,7 @@ import (
 const (
 	Development                                     = true
 	BotToken                                        = ""
-	BotId                           types.Snowflake = 0
+	BotID                           types.Snowflake = 0
 	GatewayUrl                                      = "wss://gateway.discord.gg/?v=9&encoding=json"
 	GatewayIntent                                   = 129
 	InteractionResponseEndpoint                     = "https://discord.com/api/v8/interactions/<interaction_id>/<interaction_token>/callback"

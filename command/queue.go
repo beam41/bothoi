@@ -20,7 +20,7 @@ func executeQueue(data *discord_models.Interaction) {
 	// do response to interaction
 	defer func() {
 		url := config.InteractionResponseEndpoint
-		url = strings.Replace(url, "<interaction_id>", strconv.FormatUint(uint64(data.Id), 10), 1)
+		url = strings.Replace(url, "<interaction_id>", strconv.FormatUint(uint64(data.ID), 10), 1)
 		url = strings.Replace(url, "<interaction_token>", data.Token, 1)
 
 		_, err := http_util.PostJson(url, response)
@@ -28,7 +28,7 @@ func executeQueue(data *discord_models.Interaction) {
 			log.Println(err)
 		}
 	}()
-	var songQ = repo.GetSongQueue(data.GuildId, 10)
+	var songQ = repo.GetSongQueue(data.GuildID, 10)
 	if songQ == nil || len(songQ) == 0 {
 		response = util.BuildPlayerResponse(
 			"No songs in queue",
@@ -42,12 +42,12 @@ func executeQueue(data *discord_models.Interaction) {
 	res := "Song in queue (Requested by)\n"
 
 	if songQ[0].Playing {
-		res += fmt.Sprintf("**Currently Playing**\n%s (<@%d>)\n", songQ[0].Title, songQ[0].RequesterId)
+		res += fmt.Sprintf("**Currently Playing**\n%s (<@%d>)\n", songQ[0].Title, songQ[0].RequesterID)
 		songQ = songQ[1:]
 	}
 
 	for i, song := range songQ {
-		res += fmt.Sprintf("%d. %s (<@%d>)\n", i+1, song.Title, song.RequesterId)
+		res += fmt.Sprintf("%d. %s (<@%d>)\n", i+1, song.Title, song.RequesterID)
 	}
 
 	response = util.BuildPlayerResponse(

@@ -6,7 +6,7 @@ import (
 )
 
 type Guild struct {
-	Id          types.Snowflake `gorm:"primaryKey,type:INTEGER"`
+	ID          types.Snowflake `gorm:"primaryKey,type:INTEGER"`
 	Name        string
 	Icon        *string
 	IconHash    *string
@@ -17,9 +17,9 @@ type Guild struct {
 	MemberCount uint32
 	Large       bool
 	Unavailable bool
-	OwnerId     types.Snowflake `gorm:"type:INTEGER"`
-	VoiceStates []VoiceState    `gorm:"constraint:OnDelete:CASCADE;foreignKey:GuildId"`
-	Members     []GuildMember   `gorm:"constraint:OnDelete:CASCADE;foreignKey:GuildId"`
-	Channels    []Channel       `gorm:"constraint:OnDelete:CASCADE;foreignKey:GuildId"`
-	Songs       []Song          `gorm:"foreignKey:GuildId"`
+	OwnerID     types.Snowflake `gorm:"type:INTEGER"`
+	VoiceStates []VoiceState    `gorm:"constraint:OnDelete:CASCADE;foreignKey:GuildID"`
+	Members     []GuildMember   `gorm:"constraint:OnDelete:CASCADE;foreignKey:GuildID"`
+	Channels    []Channel       `gorm:"constraint:OnDelete:CASCADE;foreignKey:GuildID"`
+	Songs       []Song          `gorm:"foreignKey:GuildID"`
 }

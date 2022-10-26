@@ -8,8 +8,8 @@ type WelcomeScreen struct {
 }
 
 type WelcomeScreenChannel struct {
-	ChannelId   types.Snowflake  `json:"channel_id,string" mapstructure:"channel_id"`
+	ChannelID   types.Snowflake  `json:"channel_id,string" mapstructure:"channel_id"`
 	Description string           `json:"description" mapstructure:"description"`
-	EmojiId     *types.Snowflake `json:"emoji_id,string" mapstructure:"emoji_id"`
+	EmojiID     *types.Snowflake `json:"emoji_id,string" mapstructure:"emoji_id"`
 	EmojiName   *string          `json:"emoji_name" mapstructure:"emoji_name"`
 }

@@ -6,8 +6,8 @@ import (
 )
 
 type GuildMember struct {
-	UserId                     types.Snowflake `gorm:"primaryKey,type:INTEGER"`
-	GuildId                    types.Snowflake `gorm:"primaryKey,type:INTEGER,"`
+	UserID                     types.Snowflake `gorm:"primaryKey,type:INTEGER"`
+	GuildID                    types.Snowflake `gorm:"primaryKey,type:INTEGER,"`
 	Nick                       *string
 	Avatar                     *string
 	JoinedAt                   time.Time
@@ -17,5 +17,5 @@ type GuildMember struct {
 	Pending                    bool
 	Permissions                string
 	CommunicationDisabledUntil *time.Time
-	//Roles                    []types.Snowflake `gorm:"type:text"`
+	// Roles                    []types.Snowflake `gorm:"type:text"`
 }

@@ -3,7 +3,7 @@ package db_models
 import "bothoi/models/types"
 
 type User struct {
-	Id            types.Snowflake `gorm:"primaryKey,type:INTEGER"`
+	ID            types.Snowflake `gorm:"primaryKey,type:INTEGER"`
 	Username      string
 	Discriminator string
 	Avatar        *string
@@ -19,9 +19,9 @@ type User struct {
 	PremiumType   uint8
 	PublicFlags   uint32
 
-	Guild       []Guild       `gorm:"foreignKey:OwnerId"`
-	GuildMember []GuildMember `gorm:"foreignKey:UserId"`
-	Channel     []Channel     `gorm:"foreignKey:OwnerId"`
-	VoiceStates []VoiceState  `gorm:"foreignKey:UserId"`
-	Song        []Song        `gorm:"foreignKey:RequesterId"`
+	Guild       []Guild       `gorm:"foreignKey:OwnerID"`
+	GuildMember []GuildMember `gorm:"foreignKey:UserID"`
+	Channel     []Channel     `gorm:"foreignKey:OwnerID"`
+	VoiceStates []VoiceState  `gorm:"foreignKey:UserID"`
+	Song        []Song        `gorm:"foreignKey:RequesterID"`
 }

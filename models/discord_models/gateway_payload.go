@@ -45,47 +45,47 @@ func NewIdentify() GatewayPayload {
 	}
 }
 
-func NewResume(s *uint64, sessionId string) GatewayPayload {
+func NewResume(s *uint64, sessionID string) GatewayPayload {
 	return GatewayPayload{
 		Op: gateway_opcode.Resume,
 		D: map[string]any{
 			"token":      config.BotToken,
-			"session_id": sessionId,
+			"session_id": sessionID,
 			"seq":        s,
 		},
 	}
 }
 
-func NewVoiceStateUpdate(guildId types.Snowflake, voiceId *types.Snowflake, mute, deaf bool) GatewayPayload {
+func NewVoiceStateUpdate(guildID types.Snowflake, voiceID *types.Snowflake, mute, deaf bool) GatewayPayload {
 	return GatewayPayload{
 		Op: gateway_opcode.VoiceStateUpdate,
 		D: map[string]any{
-			"guild_id":   guildId,
-			"channel_id": voiceId,
+			"guild_id":   guildID,
+			"channel_id": voiceID,
 			"self_mute":  mute,
 			"self_deaf":  deaf,
 		},
 	}
 }
 
-func NewVoiceIdentify(guildId, userId types.Snowflake, sessionId, token string) VoiceGatewayPayload {
+func NewVoiceIdentify(guildID, userID types.Snowflake, sessionID, token string) VoiceGatewayPayload {
 	return VoiceGatewayPayload{
 		Op: voice_opcode.Identify,
 		D: map[string]any{
-			"server_id":  guildId,
-			"user_id":    userId,
-			"session_id": sessionId,
+			"server_id":  guildID,
+			"user_id":    userID,
+			"session_id": sessionID,
 			"token":      token,
 		},
 	}
 }
 
-func NewVoiceResume(guildId types.Snowflake, sessionId, token string) VoiceGatewayPayload {
+func NewVoiceResume(guildID types.Snowflake, sessionID, token string) VoiceGatewayPayload {
 	return VoiceGatewayPayload{
 		Op: 7,
 		D: map[string]any{
-			"server_id":  guildId,
-			"session_id": sessionId,
+			"server_id":  guildID,
+			"session_id": sessionID,
 			"token":      token,
 		},
 	}

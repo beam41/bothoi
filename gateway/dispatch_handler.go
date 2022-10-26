@@ -46,8 +46,8 @@ func (client *client) dispatchHandler(payload discord_models.GatewayPayload) {
 			return
 		}
 		repo.UpsertVoiceState(data)
-		if data.UserId == config.BotId {
-			client.returnSessionId(data.GuildId, data.SessionId)
+		if data.UserID == config.BotID {
+			client.returnSessionID(data.GuildID, data.SessionID)
 		}
 	case "VOICE_SERVER_UPDATE":
 		var data discord_models.VoiceServer
@@ -56,7 +56,7 @@ func (client *client) dispatchHandler(payload discord_models.GatewayPayload) {
 			log.Println(err)
 			return
 		}
-		client.returnVoiceServer(data.GuildId, &data)
+		client.returnVoiceServer(data.GuildID, &data)
 	case "GUILD_UPDATE":
 		// not important now
 	case "GUILD_DELETE":
@@ -64,37 +64,37 @@ func (client *client) dispatchHandler(payload discord_models.GatewayPayload) {
 	}
 }
 
-func (client *client) returnSessionId(guildId types.Snowflake, sessionId string) {
+func (client *client) returnSessionID(guildID types.Snowflake, sessionID string) {
 	client.voiceWaiter.RLock()
 	defer client.voiceWaiter.RUnlock()
-	if chanMap, ok := client.voiceWaiter.list[guildId]; ok {
-		chanMap.sessionIdChan <- sessionId
+	if chanMap, ok := client.voiceWaiter.list[guildID]; ok {
+		chanMap.sessionIDChan <- sessionID
 	}
 }
 
-func (client *client) returnVoiceServer(guildId types.Snowflake, voiceServer *discord_models.VoiceServer) {
+func (client *client) returnVoiceServer(guildID types.Snowflake, voiceServer *discord_models.VoiceServer) {
 	client.voiceWaiter.RLock()
 	defer client.voiceWaiter.RUnlock()
-	if chanMap, ok := client.voiceWaiter.list[guildId]; ok {
+	if chanMap, ok := client.voiceWaiter.list[guildID]; ok {
 		chanMap.voiceServerChan <- voiceServer
 	}
 }
 
-func (client *client) JoinVoiceChannelMsg(guildId, channelId types.Snowflake, sessionIdChan chan<- string, voiceServerChan chan<- *discord_models.VoiceServer) error {
-	createVoice := discord_models.NewVoiceStateUpdate(guildId, &channelId, false, true)
+func (client *client) JoinVoiceChannelMsg(guildID, channelID types.Snowflake, sessionIDChan chan<- string, voiceServerChan chan<- *discord_models.VoiceServer) error {
+	createVoice := discord_models.NewVoiceStateUpdate(guildID, &channelID, false, true)
 	err := client.gatewayConnWriteJSON(createVoice)
 	if err != nil {
 		return err
 	}
 	client.voiceWaiter.Lock()
 	defer client.voiceWaiter.Unlock()
-	client.voiceWaiter.list[guildId] = voiceInstantiateChan{sessionIdChan, voiceServerChan}
+	client.voiceWaiter.list[guildID] = voiceInstantiateChan{sessionIDChan, voiceServerChan}
 	return nil
 }
 
-func (client *client) LeaveVoiceChannelMsg(guildId types.Snowflake) error {
-	client.CleanVoiceInstantiateChan(guildId)
-	leaveVoice := discord_models.NewVoiceStateUpdate(guildId, nil, false, false)
+func (client *client) LeaveVoiceChannelMsg(guildID types.Snowflake) error {
+	client.CleanVoiceInstantiateChan(guildID)
+	leaveVoice := discord_models.NewVoiceStateUpdate(guildID, nil, false, false)
 	err := client.gatewayConnWriteJSON(leaveVoice)
 	if err != nil {
 		return err
@@ -102,8 +102,8 @@ func (client *client) LeaveVoiceChannelMsg(guildId types.Snowflake) error {
 	return nil
 }
 
-func (client *client) CleanVoiceInstantiateChan(guildId types.Snowflake) {
+func (client *client) CleanVoiceInstantiateChan(guildID types.Snowflake) {
 	client.voiceWaiter.Lock()
 	defer client.voiceWaiter.Unlock()
-	delete(client.voiceWaiter.list, guildId)
+	delete(client.voiceWaiter.list, guildID)
 }

@@ -20,21 +20,21 @@ func Test_GetQueueSize(t *testing.T) {
 		return
 	}
 	db.Create(&db_models.Song{
-		Id:      1,
-		GuildId: 12,
+		ID:      1,
+		GuildID: 12,
 		Title:   "Not This",
 	})
 	db.Delete(&db_models.Song{}, 1)
 	db.Create(&db_models.Song{
-		GuildId: 12,
+		GuildID: 12,
 		Title:   "This",
 	})
 	db.Create(&db_models.Song{
-		GuildId: 12,
+		GuildID: 12,
 		Title:   "This",
 	})
 	db.Create(&db_models.Song{
-		GuildId: 13,
+		GuildID: 13,
 		Title:   "Thats",
 	})
 
@@ -59,24 +59,24 @@ func Test_GetNextSong(t *testing.T) {
 		return
 	}
 	db.Create(&db_models.Song{
-		Id:          1,
-		GuildId:     12,
+		ID:          1,
+		GuildID:     12,
 		Title:       "Not This",
 		RequestedAt: time.Unix(1000, 0),
 	})
 	db.Delete(&db_models.Song{}, 1)
 	db.Create(&db_models.Song{
-		GuildId:     12,
+		GuildID:     12,
 		Title:       "That",
 		RequestedAt: time.Unix(1000, 0),
 	})
 	db.Create(&db_models.Song{
-		GuildId:     12,
+		GuildID:     12,
 		Title:       "This",
 		RequestedAt: time.Unix(1, 0),
 	})
 	db.Create(&db_models.Song{
-		GuildId:     13,
+		GuildID:     13,
 		Title:       "That",
 		RequestedAt: time.Unix(1000, 0),
 	})
@@ -102,39 +102,39 @@ func Test_GetSongQueue(t *testing.T) {
 		return
 	}
 	db.Create(&db_models.Song{
-		Id:          1,
-		GuildId:     12,
+		ID:          1,
+		GuildID:     12,
 		Title:       "Not This",
 		RequestedAt: time.Unix(1000, 0),
 	})
 	db.Delete(&db_models.Song{}, 1)
 	db.Create(&db_models.Song{
-		GuildId:     12,
+		GuildID:     12,
 		Title:       "4",
 		RequestedAt: time.Unix(4, 0),
 	})
 	db.Create(&db_models.Song{
-		GuildId:     12,
+		GuildID:     12,
 		Title:       "1",
 		RequestedAt: time.Unix(1, 0),
 	})
 	db.Create(&db_models.Song{
-		GuildId:     12,
+		GuildID:     12,
 		Title:       "2",
 		RequestedAt: time.Unix(2, 0),
 	})
 	db.Create(&db_models.Song{
-		GuildId:     12,
+		GuildID:     12,
 		Title:       "3",
 		RequestedAt: time.Unix(3, 0),
 	})
 	db.Create(&db_models.Song{
-		GuildId:     12,
+		GuildID:     12,
 		Title:       "5",
 		RequestedAt: time.Unix(5, 0),
 	})
 	db.Create(&db_models.Song{
-		GuildId:     13,
+		GuildID:     13,
 		Title:       "That",
 		RequestedAt: time.Unix(1000, 0),
 	})

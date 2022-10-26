@@ -22,7 +22,7 @@ func executePlay(data *discord_models.Interaction) {
 
 	// post waiting prevent response timeout
 	url := config.InteractionResponseEndpoint
-	url = strings.Replace(url, "<interaction_id>", strconv.FormatUint(uint64(data.Id), 10), 1)
+	url = strings.Replace(url, "<interaction_id>", strconv.FormatUint(uint64(data.ID), 10), 1)
 	url = strings.Replace(url, "<interaction_token>", data.Token, 1)
 
 	_, err := http_util.PostJson(url, util.BuildPlayerResponse(
@@ -39,7 +39,7 @@ func executePlay(data *discord_models.Interaction) {
 	// do response to interaction
 	defer func() {
 		url := config.InteractionResponseEditEndpoint
-		url = strings.Replace(url, "<application_id>", strconv.FormatUint(uint64(config.BotId), 10), 1)
+		url = strings.Replace(url, "<application_id>", strconv.FormatUint(uint64(config.BotID), 10), 1)
 		url = strings.Replace(url, "<interaction_token>", data.Token, 1)
 
 		_, err := http_util.PatchJson(url, response)
@@ -48,18 +48,18 @@ func executePlay(data *discord_models.Interaction) {
 		}
 	}()
 
-	userVoiceChannel := repo.GetChannelIdByUserIdAndGuildId(data.Member.User.Id, data.GuildId)
+	userVoiceChannel := repo.GetChannelIDByUserIDAndGuildID(data.Member.User.ID, data.GuildID)
 	if userVoiceChannel == nil {
 		response = util.BuildPlayerResponseData(
 			"Can't play a song :(",
-			fmt.Sprintf("<@%d> not in voice channel", data.Member.User.Id),
+			fmt.Sprintf("<@%d> not in voice channel", data.Member.User.ID),
 			"Error",
 			embed_color.Error,
 		)
 		return
 	}
 
-	title, ytId, duration, noResult, _ := yt_util.SearchYt(options["song"].Value.(string))
+	title, ytID, duration, noResult, _ := yt_util.SearchYt(options["song"].Value.(string))
 	if noResult {
 		log.Println(err)
 		response = util.BuildPlayerResponseData(
@@ -71,11 +71,11 @@ func executePlay(data *discord_models.Interaction) {
 		return
 	}
 
-	clientVoiceChannel := repo.GetChannelIdByUserIdAndGuildId(data.Member.User.Id, config.BotId)
+	clientVoiceChannel := repo.GetChannelIDByUserIDAndGuildID(data.Member.User.ID, config.BotID)
 	if userVoiceChannel == nil || (clientVoiceChannel != nil && *userVoiceChannel != *clientVoiceChannel) {
 		response = util.BuildPlayerResponseData(
 			"Can't play a song :(",
-			fmt.Sprintf("<@%d> not in the same voice channel as bot", data.Member.User.Id),
+			fmt.Sprintf("<@%d> not in the same voice channel as bot", data.Member.User.ID),
 			"Error",
 			embed_color.Error,
 		)
@@ -85,7 +85,7 @@ func executePlay(data *discord_models.Interaction) {
 	if s, ok := options["seek"]; ok {
 		seek = util.ConvertVidLengthToSeconds(s.Value.(string))
 	}
-	err = repo.AddSongToQueue(data.GuildId, data.Member.User.Id, ytId, title, duration, seek)
+	err = repo.AddSongToQueue(data.GuildID, data.Member.User.ID, ytID, title, duration, seek)
 	if err != nil {
 		log.Println(err)
 		response = util.BuildPlayerResponseData(
@@ -100,7 +100,7 @@ func executePlay(data *discord_models.Interaction) {
 		return
 	}
 
-	err = bh_context.GetVoiceClientManager().StartClient(data.GuildId, *userVoiceChannel)
+	err = bh_context.GetVoiceClientManager().StartClient(data.GuildID, *userVoiceChannel)
 	if err != nil {
 		log.Println(err)
 		response = util.BuildPlayerResponseData(
@@ -115,18 +115,18 @@ func executePlay(data *discord_models.Interaction) {
 		return
 	}
 
-	queueSize := repo.GetQueueSize(data.GuildId)
+	queueSize := repo.GetQueueSize(data.GuildID)
 	if queueSize == 1 {
 		response = util.BuildPlayerResponseData(
 			"Play a song",
-			fmt.Sprintf("Playing %s\n%s\nrequested by <@%d>", title, util.ConvertSecondsToVidLength(duration), data.Member.User.Id),
+			fmt.Sprintf("Playing %s\n%s\nrequested by <@%d>", title, util.ConvertSecondsToVidLength(duration), data.Member.User.ID),
 			"Playing",
 			embed_color.Playing,
 		)
 	} else {
 		response = util.BuildPlayerResponseData(
 			"Play a song",
-			fmt.Sprintf("Added %s\n%s\nrequested by <@%d>", title, util.ConvertSecondsToVidLength(duration), data.Member.User.Id),
+			fmt.Sprintf("Added %s\n%s\nrequested by <@%d>", title, util.ConvertSecondsToVidLength(duration), data.Member.User.ID),
 			fmt.Sprintf("#%d in queue", queueSize),
 			embed_color.Playing,
 		)

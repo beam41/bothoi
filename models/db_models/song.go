@@ -7,11 +7,11 @@ import (
 )
 
 type Song struct {
-	Id          uint32          `gorm:"primaryKey"`
-	GuildId     types.Snowflake `gorm:"type:INTEGER"`
-	RequesterId types.Snowflake `gorm:"type:INTEGER"`
+	ID          uint32          `gorm:"primaryKey"`
+	GuildID     types.Snowflake `gorm:"type:INTEGER"`
+	RequesterID types.Snowflake `gorm:"type:INTEGER"`
 	RequestedAt time.Time
-	YtId        string
+	YtID        string
 	Title       string
 	Duration    uint32
 	Seek        uint32

@@ -40,7 +40,7 @@ func (client *client) play() {
 
 	// run player
 	for {
-		currentSong, err := repo.GetNextSong(client.guildId)
+		currentSong, err := repo.GetNextSong(client.guildID)
 		if currentSong == nil {
 			// stop player
 			client.Lock()
@@ -52,11 +52,11 @@ func (client *client) play() {
 			log.Println(err)
 			continue
 		} else if currentSong.Playing {
-			_ = repo.DeleteSong(currentSong.Id)
+			_ = repo.DeleteSong(currentSong.ID)
 			continue
 		}
-		log.Println(client.guildId, "Playing song: ", currentSong.Title)
-		url, err := yt_util.GetYoutubeDownloadUrl(currentSong.YtId)
+		log.Println(client.guildID, "Playing song: ", currentSong.Title)
+		url, err := yt_util.GetYoutubeDownloadUrl(currentSong.YtID)
 		if err != nil {
 			log.Println(err)
 			continue
@@ -64,7 +64,7 @@ func (client *client) play() {
 
 		client.Lock()
 		client.playing = true
-		_ = repo.UpdateSongPlaying(currentSong.Id)
+		_ = repo.UpdateSongPlaying(currentSong.ID)
 		if client.isWaitForExit {
 			client.isWaitForExit = false
 			client.stopWaitForExit <- struct{}{}
@@ -82,7 +82,7 @@ func (client *client) play() {
 		client.skip = false
 		client.playing = false
 		client.Unlock()
-		_ = repo.DeleteSong(currentSong.Id)
+		_ = repo.DeleteSong(currentSong.ID)
 	}
 }
 
@@ -181,7 +181,7 @@ func (client *client) sendSong(encodeSession *dca.EncodeSession) bool {
 		_, err = client.uc.Write(packet)
 
 		if err != nil {
-			log.Println(client.guildId, "player udp err", err)
+			log.Println(client.guildID, "player udp err", err)
 			client.voiceRestart()
 			return false
 

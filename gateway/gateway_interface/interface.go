@@ -10,9 +10,9 @@ type ClientConnector interface {
 }
 
 type ClientVoiceConnector interface {
-	JoinVoiceChannelMsg(guildId, channelId types.Snowflake, sessionIdChan chan<- string, voiceServerChan chan<- *discord_models.VoiceServer) error
-	LeaveVoiceChannelMsg(guildId types.Snowflake) error
-	CleanVoiceInstantiateChan(guildId types.Snowflake)
+	JoinVoiceChannelMsg(guildID, channelID types.Snowflake, sessionIDChan chan<- string, voiceServerChan chan<- *discord_models.VoiceServer) error
+	LeaveVoiceChannelMsg(guildID types.Snowflake) error
+	CleanVoiceInstantiateChan(guildID types.Snowflake)
 }
 
 type ClientInterface interface {

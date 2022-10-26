@@ -26,8 +26,8 @@ type client struct {
 	sync.RWMutex
 	ctx                context.Context
 	ctxCancel          context.CancelFunc
-	guildId            types.Snowflake
-	sessionId          *string
+	guildID            types.Snowflake
+	sessionID          *string
 	voiceServer        *discord_models.VoiceServer
 	c                  *websocket.Conn
 	uc                 *net.UDPConn
@@ -61,7 +61,7 @@ func (client *client) voiceRestart() {
 	client.vcCtxCancel()
 	err := client.c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(4009, ""))
 	if err != nil {
-		log.Println(client.guildId, err)
+		log.Println(client.guildID, err)
 	}
 	client.Lock()
 	client.resume = true
@@ -103,19 +103,19 @@ func (client *client) connection() {
 	defer func() {
 		err := c.Close()
 		if err != nil {
-			log.Println(client.guildId, err)
+			log.Println(client.guildID, err)
 		}
 	}()
 
 	if !client.resume {
-		err = client.connWriteJSON(discord_models.NewVoiceIdentify(client.guildId, config.BotId, *client.sessionId, client.voiceServer.Token))
+		err = client.connWriteJSON(discord_models.NewVoiceIdentify(client.guildID, config.BotID, *client.sessionID, client.voiceServer.Token))
 		if err != nil {
-			log.Println(client.guildId, err)
+			log.Println(client.guildID, err)
 		}
 	} else {
-		err = client.connWriteJSON(discord_models.NewVoiceResume(client.guildId, *client.sessionId, client.voiceServer.Token))
+		err = client.connWriteJSON(discord_models.NewVoiceResume(client.guildID, *client.sessionID, client.voiceServer.Token))
 		if err != nil {
-			log.Println(client.guildId, err)
+			log.Println(client.guildID, err)
 		}
 	}
 
@@ -131,11 +131,11 @@ func (client *client) connection() {
 				client.RLock()
 				if !client.destroyed {
 					client.RUnlock()
-					log.Println(client.guildId, "read err", err)
+					log.Println(client.guildID, "read err", err)
 					return
 				}
 				client.RUnlock()
-				log.Println(client.guildId, "Error, attempt to reconnect")
+				log.Println(client.guildID, "Error, attempt to reconnect")
 				client.voiceRestart()
 				return
 			}
@@ -215,8 +215,8 @@ func (client *client) connection() {
 		case hbNonce := <-heartbeatAcked:
 			if prevNonce != hbNonce {
 				// handle nonce error
-				log.Println(client.guildId, "Nonce invalid")
-				err := client.clm.StopClient(client.guildId)
+				log.Println(client.guildID, "Nonce invalid")
+				err := client.clm.StopClient(client.guildID)
 				if err != nil {
 					log.Println(err)
 				}
@@ -227,7 +227,7 @@ func (client *client) connection() {
 				return
 			}
 		case <-heartbeatIntervalTicker.C:
-			log.Println(client.guildId, "Timeout")
+			log.Println(client.guildID, "Timeout")
 			client.voiceRestart()
 			return
 		case <-client.ctx.Done():
@@ -310,7 +310,7 @@ func (client *client) udpKeepAlive(i time.Duration) {
 
 		_, err := client.uc.Write(packet)
 		if err != nil {
-			log.Println(client.guildId, "Udp err", err)
+			log.Println(client.guildID, "Udp err", err)
 			client.voiceRestart()
 			return
 		}
@@ -353,8 +353,8 @@ func (client *client) waitForExit() {
 		client.RLock()
 		if client.running {
 			client.RUnlock()
-			log.Println(client.guildId, "Idle Timeout")
-			err := client.clm.StopClient(client.guildId)
+			log.Println(client.guildID, "IDle Timeout")
+			err := client.clm.StopClient(client.guildID)
 			if err != nil {
 				log.Println(err)
 			}

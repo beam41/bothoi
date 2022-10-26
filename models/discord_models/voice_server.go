@@ -4,6 +4,6 @@ import "bothoi/models/types"
 
 type VoiceServer struct {
 	Token    string          `json:"token" mapstructure:"token"`
-	GuildId  types.Snowflake `json:"guild_id,string" mapstructure:"guild_id"`
+	GuildID  types.Snowflake `json:"guild_id,string" mapstructure:"guild_id"`
 	Endpoint string          `json:"endpoint" mapstructure:"endpoint"`
 }

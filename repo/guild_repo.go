@@ -12,7 +12,7 @@ func UpsertGuild(guild *discord_models.GuildCreate) {
 	db.Clauses(clause.OnConflict{
 		UpdateAll: true,
 	}).Create(&db_models.Guild{
-		Id:          guild.Id,
+		ID:          guild.ID,
 		Name:        guild.Name,
 		Icon:        guild.Icon,
 		IconHash:    guild.IconHash,
@@ -23,7 +23,7 @@ func UpsertGuild(guild *discord_models.GuildCreate) {
 		MemberCount: guild.MemberCount,
 		Large:       guild.Large,
 		Unavailable: guild.Unavailable,
-		OwnerId:     guild.OwnerId,
+		OwnerID:     guild.OwnerID,
 	})
 
 	users := make([]db_models.User, len(guild.Members))
@@ -31,7 +31,7 @@ func UpsertGuild(guild *discord_models.GuildCreate) {
 	for i, member := range guild.Members {
 		// user
 		users[i] = db_models.User{
-			Id:            member.User.Id,
+			ID:            member.User.ID,
 			Username:      member.User.Username,
 			Discriminator: member.User.Discriminator,
 			Avatar:        member.User.Avatar,
@@ -58,11 +58,11 @@ func UpsertGuild(guild *discord_models.GuildCreate) {
 			communicationDisabledUntil = &c
 		}
 		members[i] = db_models.GuildMember{
-			UserId:  member.User.Id,
-			GuildId: guild.Id,
+			UserID:  member.User.ID,
+			GuildID: guild.ID,
 			Nick:    member.Nick,
 			Avatar:  member.Avatar,
-			//Roles:                      member.Roles,
+			// Roles:                      member.Roles,
 			JoinedAt:                   joinedAt,
 			PremiumSince:               premiumSince,
 			Deaf:                       member.Deaf,
@@ -84,13 +84,13 @@ func UpsertGuild(guild *discord_models.GuildCreate) {
 	channels := make([]db_models.Channel, len(guild.Channels))
 	for i, channel := range guild.Channels {
 		channels[i] = db_models.Channel{
-			Id:       channel.Id,
+			ID:       channel.ID,
 			Type:     channel.Type,
 			Position: channel.Position,
 			Name:     channel.Name,
 			Bitrate:  channel.Bitrate,
-			GuildId:  guild.Id,
-			OwnerId:  channel.OwnerId,
+			GuildID:  guild.ID,
+			OwnerID:  channel.OwnerID,
 		}
 	}
 	if len(guild.Channels) > 0 {
@@ -102,9 +102,9 @@ func UpsertGuild(guild *discord_models.GuildCreate) {
 	voiceStates := make([]db_models.VoiceState, len(guild.VoiceStates))
 	for i, voiceState := range guild.VoiceStates {
 		voiceStates[i] = db_models.VoiceState{
-			UserId:                  voiceState.UserId,
-			GuildId:                 guild.Id,
-			SessionId:               voiceState.SessionId,
+			UserID:                  voiceState.UserID,
+			GuildID:                 guild.ID,
+			SessionID:               voiceState.SessionID,
 			Deaf:                    voiceState.Deaf,
 			Mute:                    voiceState.Mute,
 			SelfDeaf:                voiceState.SelfDeaf,
@@ -113,7 +113,7 @@ func UpsertGuild(guild *discord_models.GuildCreate) {
 			SelfVideo:               voiceState.SelfVideo,
 			Suppress:                voiceState.Suppress,
 			RequestToSpeakTimestamp: voiceState.RequestToSpeakTimestamp,
-			ChannelId:               voiceState.ChannelId,
+			ChannelID:               voiceState.ChannelID,
 		}
 	}
 	if len(guild.VoiceStates) > 0 {

@@ -16,7 +16,7 @@ import (
 )
 
 type voiceInstantiateChan struct {
-	sessionIdChan   chan<- string
+	sessionIDChan   chan<- string
 	voiceServerChan chan<- *discord_models.VoiceServer
 }
 
@@ -95,7 +95,7 @@ func (client *client) connection() {
 		}
 	} else {
 		client.info.RLock()
-		v := discord_models.NewResume(client.info.sequenceNumber, client.info.session.SessionId)
+		v := discord_models.NewResume(client.info.sequenceNumber, client.info.session.SessionID)
 		log.Println("outgoing: ", v)
 		err := client.conn.WriteJSON(v)
 		client.info.RUnlock()

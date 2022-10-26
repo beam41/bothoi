@@ -10,8 +10,8 @@ import (
 	"strings"
 )
 
-func GetYoutubeDownloadUrl(ytId string) (string, error) {
-	cmd := exec.Command("youtube-dl", "-g", "-f", "bestaudio", "--", ytId)
+func GetYoutubeDownloadUrl(ytID string) (string, error) {
+	cmd := exec.Command("youtube-dl", "-g", "-f", "bestaudio", "--", ytID)
 
 	stdout, err := cmd.Output()
 	if err != nil {
@@ -45,7 +45,7 @@ func isYtVidUrl(testUrl string) bool {
 	return false
 }
 
-func SearchYt(searchStr string) (title string, ytId string, duration uint32, noResult bool, err error) {
+func SearchYt(searchStr string) (title string, ytID string, duration uint32, noResult bool, err error) {
 	var cmd *exec.Cmd
 	if !isYtVidUrl(searchStr) {
 		// add \" to escape quotes in cmd
@@ -72,7 +72,7 @@ func SearchYt(searchStr string) (title string, ytId string, duration uint32, noR
 		return
 	}
 	title = results[0]
-	ytId = results[1]
+	ytID = results[1]
 	duration = util.ConvertVidLengthToSeconds(results[2])
 	return
 }

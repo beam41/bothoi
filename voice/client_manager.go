@@ -24,14 +24,14 @@ func NewClientManager() voice_interface.ClientManagerInterface {
 }
 
 // createClient make new client from guild
-func (clm *clientManager) createClient(guildId types.Snowflake) *client {
-	if clm.list[guildId] != nil {
-		return clm.list[guildId]
+func (clm *clientManager) createClient(guildID types.Snowflake) *client {
+	if clm.list[guildID] != nil {
+		return clm.list[guildID]
 	}
 	clm.Lock()
 	ctx, cancel := context.WithCancel(context.Background())
-	clm.list[guildId] = &client{
-		guildId:         guildId,
+	clm.list[guildID] = &client{
+		guildID:         guildID,
 		udpReadyWait:    sync.NewCond(&sync.Mutex{}),
 		ctx:             ctx,
 		ctxCancel:       cancel,
@@ -40,14 +40,14 @@ func (clm *clientManager) createClient(guildId types.Snowflake) *client {
 		clm:             clm,
 	}
 	clm.Unlock()
-	return clm.list[guildId]
+	return clm.list[guildID]
 }
 
 // removeClient stop playing and remove the client from the list
-func (clm *clientManager) removeClient(guildId types.Snowflake) error {
+func (clm *clientManager) removeClient(guildID types.Snowflake) error {
 	clm.Lock()
 	defer clm.Unlock()
-	var client = clm.list[guildId]
+	var client = clm.list[guildID]
 	if client == nil {
 		return errors.New("client not found")
 	}
@@ -58,15 +58,15 @@ func (clm *clientManager) removeClient(guildId types.Snowflake) error {
 	client.pauseWait.Broadcast()
 	client.ctxCancel()
 	client.closeConnection()
-	delete(clm.list, guildId)
+	delete(clm.list, guildID)
 	return nil
 }
 
 // PauseClient pause/resume the music player return true if the player is paused
-func (clm *clientManager) PauseClient(guildId types.Snowflake) (bool, error) {
+func (clm *clientManager) PauseClient(guildID types.Snowflake) (bool, error) {
 	clm.Lock()
 	defer clm.Unlock()
-	var client = clm.list[guildId]
+	var client = clm.list[guildID]
 	if client == nil {
 		return false, errors.New("client not found")
 	}
@@ -82,10 +82,10 @@ func (clm *clientManager) PauseClient(guildId types.Snowflake) (bool, error) {
 }
 
 // SkipSong skip a song
-func (clm *clientManager) SkipSong(guildId types.Snowflake) error {
+func (clm *clientManager) SkipSong(guildID types.Snowflake) error {
 	clm.Lock()
 	defer clm.Unlock()
-	var client = clm.list[guildId]
+	var client = clm.list[guildID]
 	if client == nil {
 		return errors.New("client not found")
 	}
@@ -97,9 +97,9 @@ func (clm *clientManager) SkipSong(guildId types.Snowflake) error {
 }
 
 // StartClient start the client if not started already
-func (clm *clientManager) StartClient(guildId, channelId types.Snowflake) error {
+func (clm *clientManager) StartClient(guildID, channelID types.Snowflake) error {
 	clm.RLock()
-	var client = clm.list[guildId]
+	var client = clm.list[guildID]
 	if client != nil {
 		clm.RUnlock()
 		client.RLock()
@@ -112,21 +112,21 @@ func (clm *clientManager) StartClient(guildId, channelId types.Snowflake) error 
 	clm.RUnlock()
 
 	log.Println("Starting client")
-	client = clm.createClient(guildId)
-	sessionIdChan := make(chan string)
+	client = clm.createClient(guildID)
+	sessionIDChan := make(chan string)
 	voiceServerChan := make(chan *discord_models.VoiceServer)
-	err := bh_context.GetGatewayClient().JoinVoiceChannelMsg(guildId, channelId, sessionIdChan, voiceServerChan)
+	err := bh_context.GetGatewayClient().JoinVoiceChannelMsg(guildID, channelID, sessionIDChan, voiceServerChan)
 	if err != nil {
 		return err
 	}
 
 	// wait for session id and voice server
 	go func() {
-		sessionId, voiceServer := <-sessionIdChan, <-voiceServerChan
-		bh_context.GetGatewayClient().CleanVoiceInstantiateChan(guildId)
+		sessionID, voiceServer := <-sessionIDChan, <-voiceServerChan
+		bh_context.GetGatewayClient().CleanVoiceInstantiateChan(guildID)
 		client.Lock()
 		defer client.Unlock()
-		client.sessionId = &sessionId
+		client.sessionID = &sessionID
 		client.voiceServer = voiceServer
 		go client.connect()
 		go client.play()
@@ -136,13 +136,13 @@ func (clm *clientManager) StartClient(guildId, channelId types.Snowflake) error 
 }
 
 // StopClient remove client from list and properly leave
-func (clm *clientManager) StopClient(guildId types.Snowflake) error {
-	_ = repo.DeleteSongsInGuild(guildId)
-	err := clm.removeClient(guildId)
+func (clm *clientManager) StopClient(guildID types.Snowflake) error {
+	_ = repo.DeleteSongsInGuild(guildID)
+	err := clm.removeClient(guildID)
 	if err != nil {
 		return err
 	}
-	err = bh_context.GetGatewayClient().LeaveVoiceChannelMsg(guildId)
+	err = bh_context.GetGatewayClient().LeaveVoiceChannelMsg(guildID)
 	if err != nil {
 		return err
 	}

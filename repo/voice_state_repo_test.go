@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func Test_GetChannelIdByUserIdAndGuildId(t *testing.T) {
+func Test_GetChannelIDByUserIDAndGuildID(t *testing.T) {
 	db_, err := gorm.Open(sqlite.Open("file::memory:"), &gorm.Config{})
 	if err != nil {
 		return
@@ -18,21 +18,21 @@ func Test_GetChannelIdByUserIdAndGuildId(t *testing.T) {
 	if err != nil {
 		return
 	}
-	channelId1 := types.Snowflake(40)
+	channelID1 := types.Snowflake(40)
 	db.Create(&db_models.VoiceState{
-		UserId:    12,
-		GuildId:   23,
-		ChannelId: &channelId1,
-		SessionId: "a",
+		UserID:    12,
+		GuildID:   23,
+		ChannelID: &channelID1,
+		SessionID: "a",
 	})
-	channelId2 := types.Snowflake(50)
+	channelID2 := types.Snowflake(50)
 	db.Create(&db_models.VoiceState{
-		UserId:    12,
-		GuildId:   23,
-		ChannelId: &channelId2,
-		SessionId: "b",
+		UserID:    12,
+		GuildID:   23,
+		ChannelID: &channelID2,
+		SessionID: "b",
 	})
-	result := GetChannelIdByUserIdAndGuildId(12, 23)
+	result := GetChannelIDByUserIDAndGuildID(12, 23)
 	expected := types.Snowflake(40)
 
 	if *result != expected {
