@@ -157,19 +157,17 @@ func (client *client) connection() {
 			err := c.ReadJSON(&payload)
 			if err != nil {
 				client.RLock()
-				if !client.destroyed {
+				if client.destroyed {
 					client.RUnlock()
-					log.Println(client.guildID, "read err", err)
-					if websocket.IsUnexpectedCloseError(err, 4006, 4009, 4015) {
-						client.voiceReset()
-					} else {
-						client.voiceRestart()
-					}
 					return
 				}
 				client.RUnlock()
-				log.Println(client.guildID, "Error, attempt to reconnect")
-				client.voiceRestart()
+				log.Println(client.guildID, "read err", err)
+				if websocket.IsUnexpectedCloseError(err, 4006, 4009, 4015) {
+					client.voiceReset()
+				} else {
+					client.voiceRestart()
+				}
 				return
 			}
 			if config.Development {
