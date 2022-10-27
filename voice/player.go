@@ -82,6 +82,7 @@ func (client *client) play() {
 		client.skip = false
 		client.playing = false
 		client.Unlock()
+		log.Println(client.guildID, "Played song: ", currentSong.Title)
 		_ = repo.DeleteSong(currentSong.ID)
 	}
 }
