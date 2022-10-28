@@ -46,7 +46,7 @@ type client struct {
 	skip               bool
 	isWaitForExit      bool
 	stopWaitForExit    chan struct{}
-	clm                *clientManager
+	clm                *ClientManager
 	vcCtx              context.Context
 	vcCtxCancel        context.CancelFunc
 	resume             bool

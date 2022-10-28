@@ -1,8 +1,8 @@
 package command
 
 import (
-	"bothoi/bh_context"
 	"bothoi/config"
+	"bothoi/gateway"
 	"bothoi/models/discord_models"
 	"bothoi/references/embed_color"
 	"bothoi/repo"
@@ -14,7 +14,7 @@ import (
 
 const commandPlay = "play"
 
-func executePlay(data *discord_models.Interaction) {
+func executePlay(gatewayClient *gateway.Client, data *discord_models.Interaction) {
 	postLoading(data.ID, data.Token, "Play")
 
 	options := util.SliceToMap(data.Data.Options, func(i int, item discord_models.InteractionOption) string { return item.Name })
@@ -70,7 +70,7 @@ func executePlay(data *discord_models.Interaction) {
 		}
 	}
 
-	err := bh_context.GetVoiceClientManager().StartClient(data.GuildID, *userVoiceChannel)
+	err := gatewayClient.StartVoiceClient(data.GuildID, *userVoiceChannel)
 	if err != nil {
 		log.Println(err)
 		response = util.BuildPlayerResponseData(

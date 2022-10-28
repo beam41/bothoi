@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bothoi/bh_context"
 	"bothoi/command"
 	"bothoi/gateway"
 	"bothoi/repo"
@@ -12,9 +11,8 @@ import (
 func main() {
 	log.Println("Bot start")
 	repo.StartDb()
-	gatewayClient := gateway.NewClient()
 	voiceClientManager := voice.NewClientManager()
-	commandManager := command.NewCommandManager()
-	bh_context.SetCtx(gatewayClient, voiceClientManager, commandManager)
+	gatewayClient := gateway.NewClient(voiceClientManager)
+	command.NewCommandManager(gatewayClient)
 	gatewayClient.Connect()
 }

@@ -2,10 +2,10 @@ package gateway
 
 import (
 	"bothoi/config"
-	"bothoi/gateway/gateway_interface"
 	"bothoi/models/discord_models"
 	"bothoi/models/types"
 	"bothoi/references/gateway_opcode"
+	"bothoi/voice"
 	"context"
 	"encoding/json"
 	"github.com/gorilla/websocket"
@@ -20,11 +20,12 @@ type voiceInstantiateChan struct {
 	voiceServerChan chan<- *discord_models.VoiceServer
 }
 
-type client struct {
-	conn      *websocket.Conn
-	ctx       context.Context
-	ctxCancel context.CancelFunc
-	info      struct {
+type Client struct {
+	voiceClientManager *voice.ClientManager
+	conn               *websocket.Conn
+	ctx                context.Context
+	ctxCancel          context.CancelFunc
+	info               struct {
 		sync.RWMutex
 		sequenceNumber *uint64
 		session        *discord_models.ReadyEvent
@@ -33,11 +34,13 @@ type client struct {
 		sync.RWMutex
 		list map[types.Snowflake]voiceInstantiateChan
 	}
-	resume bool
+	resume              bool
+	commandExecutorList map[string]func(*Client, *discord_models.Interaction)
 }
 
-func NewClient() gateway_interface.ClientInterface {
-	return &client{
+func NewClient(voiceClientManager *voice.ClientManager) *Client {
+	return &Client{
+		voiceClientManager: voiceClientManager,
 		voiceWaiter: struct {
 			sync.RWMutex
 			list map[types.Snowflake]voiceInstantiateChan
@@ -45,18 +48,18 @@ func NewClient() gateway_interface.ClientInterface {
 	}
 }
 
-func (client *client) gatewayConnReadJSON(v any) (err error) {
+func (client *Client) gatewayConnReadJSON(v any) (err error) {
 	err = client.conn.ReadJSON(&v)
 	return err
 }
 
-func (client *client) gatewayConnWriteJSON(v any) (err error) {
+func (client *Client) gatewayConnWriteJSON(v any) (err error) {
 	log.Println("outgoing: ", v)
 	err = client.conn.WriteJSON(v)
 	return
 }
 
-func (client *client) gatewayConnCloseRestart() {
+func (client *Client) gatewayConnCloseRestart() {
 	defer func() {
 		if err := recover(); err != nil {
 			log.Println("gatewayConnCloseRestart panic occurred:", err)
@@ -71,7 +74,7 @@ func (client *client) gatewayConnCloseRestart() {
 }
 
 // connect to the discord gateway.
-func (client *client) Connect() {
+func (client *Client) Connect() {
 	for {
 		ctx, cancel := context.WithCancel(context.Background())
 		client.ctx = ctx
@@ -80,7 +83,7 @@ func (client *client) Connect() {
 	}
 }
 
-func (client *client) connection() {
+func (client *Client) connection() {
 	defer func() {
 		if err := recover(); err != nil {
 			log.Println("gateway connection panic occurred:", err)

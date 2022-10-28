@@ -1,8 +1,8 @@
 package command
 
 import (
-	"bothoi/command/command_interface"
 	"bothoi/config"
+	"bothoi/gateway"
 	"bothoi/models/discord_models"
 	"bothoi/models/types"
 	"bothoi/references/embed_color"
@@ -14,13 +14,13 @@ import (
 	"strings"
 )
 
-type commandManager struct {
-	executorList map[string]func(*discord_models.Interaction)
+type Manager struct {
+	gatewayClient *gateway.Client
 }
 
-func NewCommandManager() command_interface.CommandManagerInterface {
-	return &commandManager{
-		executorList: map[string]func(*discord_models.Interaction){
+func NewCommandManager(gatewayClient *gateway.Client) *Manager {
+	gatewayClient.SetCommandExecutorList(
+		map[string]func(*gateway.Client, *discord_models.Interaction){
 			commandPlay:   executePlay,
 			commandQueue:  executeQueue,
 			commandPause0: executePause,
@@ -28,12 +28,9 @@ func NewCommandManager() command_interface.CommandManagerInterface {
 			commandStop:   executeStop,
 			commandSkip:   executeSkip,
 		},
-	}
-}
-
-func (cm *commandManager) MapInteractionExecute(data *discord_models.Interaction) {
-	if interaction, ok := cm.executorList[data.Data.Name]; ok {
-		interaction(data)
+	)
+	return &Manager{
+		gatewayClient: gatewayClient,
 	}
 }
 

@@ -1,8 +1,8 @@
 package command
 
 import (
-	"bothoi/bh_context"
 	"bothoi/config"
+	"bothoi/gateway"
 	"bothoi/models/discord_models"
 	"bothoi/references/embed_color"
 	"bothoi/repo"
@@ -12,7 +12,7 @@ import (
 
 const commandSkip = "skip"
 
-func executeSkip(data *discord_models.Interaction) {
+func executeSkip(gatewayClient *gateway.Client, data *discord_models.Interaction) {
 	var response discord_models.InteractionResponse
 	defer func() { postResponse(data.ID, data.Token, response) }()
 
@@ -23,7 +23,7 @@ func executeSkip(data *discord_models.Interaction) {
 		return
 	}
 
-	err := bh_context.GetVoiceClientManager().SkipSong(data.GuildID)
+	err := gatewayClient.SkipSong(data.GuildID)
 	if err != nil {
 		response = util.BuildPlayerResponse(
 			"Skip Error",
