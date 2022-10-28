@@ -106,8 +106,8 @@ func (clm *clientManager) StartClient(guildID, channelID types.Snowflake) error 
 		defer client.RUnlock()
 		if client.running {
 			go client.play()
-			return nil
 		}
+		return nil
 	}
 	clm.RUnlock()
 
