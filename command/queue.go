@@ -72,7 +72,15 @@ func executeQueue(data *discord_models.Interaction) {
 	var res strings.Builder
 	res.WriteString("Song in queue (Requested by)\n")
 	for i, song := range songQ {
-		res.WriteString(fmt.Sprintf("%s %s (<@%d>)\n", util.Ternary(song.Playing, "Playing:", strconv.Itoa(offset+i+1)+"."), song.Title, song.RequesterID))
+		res.WriteString(
+			fmt.Sprintf(
+				"%s %s** | %s | <@%d>**\n",
+				util.Ternary(song.Playing, "Playing:", strconv.Itoa(offset+i+1)+"."),
+				song.Title,
+				util.ConvertSecondsToVidLength(song.Duration),
+				song.RequesterID,
+			),
+		)
 	}
 
 	response = util.BuildPlayerResponseData(
