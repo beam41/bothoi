@@ -59,7 +59,7 @@ func checkNotSameChannelError[InteractionResponse discord_models.InteractionResp
 			embed_color.Error,
 		)
 	}
-	return false, nil
+	return false, builder("", "", "", embed_color.EmbedColor(0))
 }
 
 func responseNoLoading(id types.Snowflake, token string, response discord_models.InteractionResponse) {
@@ -83,7 +83,7 @@ func postLoading(id types.Snowflake, token string, cmd string) {
 		cmd,
 		"Loading...",
 		"Please Wait",
-		embed_color.Playing,
+		embed_color.Default,
 	))
 	if err != nil {
 		log.Println(err)

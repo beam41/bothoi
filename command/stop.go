@@ -38,6 +38,6 @@ func executeStop(data *discord_models.Interaction) {
 		"Stopped",
 		"Stopped by the request of <@"+strconv.FormatUint(uint64(data.Member.User.ID), 10)+">",
 		"Stopped",
-		embed_color.EmbedColor(0xff1744),
+		embed_color.SuccessInterruptHigh,
 	)
 }

@@ -31,7 +31,7 @@ func executeQueue(data *discord_models.Interaction) {
 			"Queue",
 			"No song in queue",
 			"Start playing some songs now!",
-			embed_color.Default,
+			embed_color.ErrorLow,
 		)
 		return
 	}
@@ -60,6 +60,6 @@ func executeQueue(data *discord_models.Interaction) {
 		"Queue",
 		res.String(),
 		fmt.Sprintf("Page %d/%d | %d song%s in queue", page+1, maxPage+1, queueSize, util.Ternary(queueSize == 1, "", "s")),
-		embed_color.EmbedColor(0x607d8b),
+		embed_color.Info,
 	)
 }

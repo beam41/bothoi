@@ -40,14 +40,14 @@ func executePause(data *discord_models.Interaction) {
 			"Paused",
 			"Paused by the request of <@"+strconv.FormatUint(uint64(data.Member.User.ID), 10)+">",
 			"/resume to resume",
-			embed_color.EmbedColor(0xffeb3b),
+			embed_color.SuccessInterrupt,
 		)
 	} else {
 		response = util.BuildPlayerResponse(
 			"Resumed",
 			"Resumed by the request of <@"+strconv.FormatUint(uint64(data.Member.User.ID), 10)+">",
 			"/pause to pause",
-			embed_color.EmbedColor(0x00c853),
+			embed_color.SuccessContinue,
 		)
 	}
 }

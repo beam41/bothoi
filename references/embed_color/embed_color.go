@@ -3,9 +3,13 @@ package embed_color
 type EmbedColor uint32
 
 const (
-	Playing EmbedColor = 0x9ccc65
-	Queued  EmbedColor = 0xb2ebf2
-	Default EmbedColor = 0xb8b8b8
-	Error   EmbedColor = 0xd32f2f
-	Info    EmbedColor = 0x0d47a1
+	Default  EmbedColor = 0xb8b8b8
+	Error    EmbedColor = 0xd32f2f
+	ErrorLow EmbedColor = 0xff8a80
+	Info     EmbedColor = 0x0d47a1
+
+	SuccessInterrupt     EmbedColor = 0xeeff41
+	SuccessInterruptHigh EmbedColor = 0xff6d00
+	SuccessContinue      EmbedColor = 0x9ccc65
+	SuccessScheduled     EmbedColor = 0xb2ebf2
 )

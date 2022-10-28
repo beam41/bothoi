@@ -93,7 +93,7 @@ func executePlay(data *discord_models.Interaction) {
 				data.Member.User.ID,
 			),
 			fmt.Sprintf("%d song%s in queue", queueSize, util.Ternary(queueSize > 1, "s", "")),
-			embed_color.Queued,
+			embed_color.SuccessScheduled,
 		)
 	} else if queueSize == 1 {
 		response = util.BuildPlayerResponseData(
@@ -105,7 +105,7 @@ func executePlay(data *discord_models.Interaction) {
 				data.Member.User.ID,
 			),
 			"Playing",
-			embed_color.Playing,
+			embed_color.SuccessContinue,
 		)
 	} else {
 		response = util.BuildPlayerResponseData(
@@ -117,7 +117,7 @@ func executePlay(data *discord_models.Interaction) {
 				data.Member.User.ID,
 			),
 			fmt.Sprintf("#%d in queue", queueSize),
-			embed_color.Queued,
+			embed_color.SuccessScheduled,
 		)
 	}
 }

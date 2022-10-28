@@ -38,6 +38,6 @@ func executeSkip(data *discord_models.Interaction) {
 		"Skipped",
 		fmt.Sprintf("Skipped by the request of <@%d>", uint64(data.Member.User.ID)),
 		"Skipped",
-		embed_color.EmbedColor(0xff6f00),
+		embed_color.SuccessInterrupt,
 	)
 }
