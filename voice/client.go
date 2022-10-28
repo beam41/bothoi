@@ -164,7 +164,7 @@ func (client *client) connection() {
 				}
 				client.RUnlock()
 				log.Println(client.guildID, "read err", err)
-				if websocket.IsUnexpectedCloseError(err, 4006, 4009, 4015) {
+				if websocket.IsUnexpectedCloseError(err, 4015) {
 					client.voiceReset()
 				} else {
 					client.voiceRestart()
