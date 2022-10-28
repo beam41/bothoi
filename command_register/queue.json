@@ -2,5 +2,14 @@
   "type": 1,
   "name": "queue",
   "description": "List the music player queue",
-  "default_permission": true
+  "default_permission": true,
+  "options": [
+    {
+      "type": 4,
+      "name": "page",
+      "description": "Queue page to open (default: 1)",
+      "min_value": 1,
+      "required": false
+    }
+  ]
 }

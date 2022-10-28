@@ -139,7 +139,7 @@ func Test_GetSongQueue(t *testing.T) {
 		RequestedAt: time.Unix(1000, 0),
 	})
 
-	resultSlice := GetSongQueue(12, 4)
+	resultSlice := GetSongQueue(12, 1, 3)
 	resultSliceStr := make([]string, len(resultSlice))
 	for i, song := range resultSlice {
 		resultSliceStr[i] = song.Title
@@ -147,7 +147,7 @@ func Test_GetSongQueue(t *testing.T) {
 
 	result := strings.Join(resultSliceStr, ",")
 
-	expected := "1,2,3,4"
+	expected := "2,3,4"
 
 	if result != expected {
 		t.Errorf("expected: %v, got: %v", expected, result)

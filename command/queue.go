@@ -16,21 +16,44 @@ import (
 const commandQueue = "queue"
 
 func executeQueue(data *discord_models.Interaction) {
-	var response discord_models.InteractionResponse
+	options := util.SliceToMap(data.Data.Options, func(i int, item discord_models.InteractionOption) string { return item.Name })
+
+	// post waiting prevent response timeout
+	url := config.InteractionResponseEndpoint
+	url = strings.Replace(url, "<interaction_id>", strconv.FormatUint(uint64(data.ID), 10), 1)
+	url = strings.Replace(url, "<interaction_token>", data.Token, 1)
+
+	_, err := http_util.PostJson(url, util.BuildPlayerResponse(
+		"Queue",
+		"Loading...",
+		"please wait",
+		embed_color.Default,
+	))
+	if err != nil {
+		log.Println(err)
+	}
+
+	var response discord_models.InteractionCallbackData
 	// do response to interaction
 	defer func() {
-		url := config.InteractionResponseEndpoint
-		url = strings.Replace(url, "<interaction_id>", strconv.FormatUint(uint64(data.ID), 10), 1)
+		url := config.InteractionResponseEditEndpoint
+		url = strings.Replace(url, "<application_id>", strconv.FormatUint(uint64(config.BotID), 10), 1)
 		url = strings.Replace(url, "<interaction_token>", data.Token, 1)
 
-		_, err := http_util.PostJson(url, response)
+		_, err := http_util.PatchJson(url, response)
 		if err != nil {
 			log.Println(err)
 		}
 	}()
-	var songQ = repo.GetSongQueue(data.GuildID, 10)
-	if songQ == nil || len(songQ) == 0 {
-		response = util.BuildPlayerResponse(
+
+	page := 0
+	if opPage, ok := options["page"]; ok {
+		page = int(opPage.Value.(float64)) - 1
+	}
+
+	var queueSize = repo.GetQueueSize(data.GuildID)
+	if queueSize == 0 {
+		response = util.BuildPlayerResponseData(
 			"No songs in queue",
 			"Start playing a song now!",
 			"Queue",
@@ -39,21 +62,23 @@ func executeQueue(data *discord_models.Interaction) {
 		return
 	}
 
-	res := "Song in queue (Requested by)\n"
-
-	if songQ[0].Playing {
-		res += fmt.Sprintf("**Currently Playing**\n%s (<@%d>)\n", songQ[0].Title, songQ[0].RequesterID)
-		songQ = songQ[1:]
+	var maxPage = int(queueSize-1) / 10
+	if maxPage < page {
+		page = maxPage
 	}
+	offset := page * 10
 
+	var songQ = repo.GetSongQueue(data.GuildID, offset, 10)
+	var res strings.Builder
+	res.WriteString("Song in queue (Requested by)\n")
 	for i, song := range songQ {
-		res += fmt.Sprintf("%d. %s (<@%d>)\n", i+1, song.Title, song.RequesterID)
+		res.WriteString(fmt.Sprintf("%s %s (<@%d>)\n", util.Ternary(song.Playing, "Playing:", strconv.Itoa(offset+i+1)+"."), song.Title, song.RequesterID))
 	}
 
-	response = util.BuildPlayerResponse(
+	response = util.BuildPlayerResponseData(
 		"Queue",
-		res,
-		fmt.Sprintf("%d song%s in queue", len(songQ), util.Ternary(len(songQ) == 1, "", "s")),
+		res.String(),
+		fmt.Sprintf("page %d/%d, %d song%s in queue", page+1, maxPage+1, queueSize, util.Ternary(queueSize == 1, "", "s")),
 		embed_color.Default,
 	)
 }

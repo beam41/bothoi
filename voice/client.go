@@ -15,6 +15,7 @@ import (
 	"math/big"
 	"net"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -301,12 +302,14 @@ func (client *client) performIpDiscovery() (ip string, port uint16) {
 		log.Panicln(client.guildID, "UDP packet too short")
 	}
 
+	var ipb strings.Builder
 	for i := 4; i < 20; i++ {
 		if receive[i] == 0 {
 			break
 		}
-		ip += string(receive[i])
+		ipb.WriteString(string(receive[i]))
 	}
+	ip = ipb.String()
 
 	// Grab port from position 68 and 69
 	port = binary.BigEndian.Uint16(receive[68:70])

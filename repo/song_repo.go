@@ -24,13 +24,14 @@ func GetQueueSize(guildID types.Snowflake) (size int64) {
 	return
 }
 
-func GetSongQueue(guildID types.Snowflake, max int) (songs []db_models.Song) {
+func GetSongQueue(guildID types.Snowflake, offset, limit int) (songs []db_models.Song) {
 	db.
 		Model(&db_models.Song{}).
 		Select("RequesterID", "YtID", "Title", "Duration", "Playing").
 		Where(map[string]interface{}{"guild_id": guildID}).
 		Order("requested_at").
-		Limit(max).
+		Offset(offset).
+		Limit(limit).
 		Find(&songs)
 	return
 }
