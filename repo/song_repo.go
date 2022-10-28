@@ -3,6 +3,7 @@ package repo
 import (
 	"bothoi/models/db_models"
 	"bothoi/models/types"
+	"bothoi/util/yt_util.go"
 	"time"
 )
 
@@ -16,6 +17,22 @@ func AddSongToQueue(guildID, requesterID types.Snowflake, ytID, title string, du
 		Duration:    duration,
 		Seek:        seek,
 	})
+	return result.Error
+}
+
+func AddSongToQueueMultiple(guildID, requesterID types.Snowflake, ytResult []yt_util.SearchResult) error {
+	songs := make([]db_models.Song, len(ytResult))
+	for i, result := range ytResult {
+		songs[i] = db_models.Song{
+			GuildID:     guildID,
+			RequesterID: requesterID,
+			RequestedAt: time.Now(),
+			YtID:        result.YtID,
+			Title:       result.Title,
+			Duration:    result.Duration,
+		}
+	}
+	result := db.Create(&songs)
 	return result.Error
 }
 

@@ -59,8 +59,8 @@ func executePlay(data *discord_models.Interaction) {
 		return
 	}
 
-	title, ytID, duration, noResult, _ := yt_util.SearchYt(options["song"].Value.(string))
-	if noResult {
+	result, _ := yt_util.SearchYt(options["song"].Value.(string))
+	if len(result) == 0 {
 		log.Println(err)
 		response = util.BuildPlayerResponseData(
 			"Can't play a song :(",
@@ -81,54 +81,111 @@ func executePlay(data *discord_models.Interaction) {
 		)
 		return
 	}
-	seek := uint32(0)
-	if s, ok := options["seek"]; ok {
-		seek = util.ConvertVidLengthToSeconds(s.Value.(string))
-	}
-	err = repo.AddSongToQueue(data.GuildID, data.Member.User.ID, ytID, title, duration, seek)
-	if err != nil {
-		log.Println(err)
-		response = util.BuildPlayerResponseData(
-			"Can't play a song :(",
-			"Unknown Error",
-			"Error",
-			embed_color.Error,
-		)
+
+	if len(result) == 1 {
+		seek := uint32(0)
+		if s, ok := options["seek"]; ok {
+			seek = util.ConvertVidLengthToSeconds(s.Value.(string))
+		}
+		err = repo.AddSongToQueue(data.GuildID, data.Member.User.ID, result[0].YtID, result[0].Title, result[0].Duration, seek)
 		if err != nil {
 			log.Println(err)
+			response = util.BuildPlayerResponseData(
+				"Can't add a song :(",
+				"Unknown Error",
+				"Error",
+				embed_color.Error,
+			)
+			if err != nil {
+				log.Println(err)
+			}
+			return
 		}
-		return
-	}
 
-	err = bh_context.GetVoiceClientManager().StartClient(data.GuildID, *userVoiceChannel)
-	if err != nil {
-		log.Println(err)
-		response = util.BuildPlayerResponseData(
-			"Can't play a song :(",
-			"Unknown Error",
-			"Error",
-			embed_color.Error,
-		)
+		err = bh_context.GetVoiceClientManager().StartClient(data.GuildID, *userVoiceChannel)
 		if err != nil {
 			log.Println(err)
+			response = util.BuildPlayerResponseData(
+				"Can't start player :(",
+				"Unknown Error",
+				"Error",
+				embed_color.Error,
+			)
+			if err != nil {
+				log.Println(err)
+			}
+			return
 		}
-		return
-	}
 
-	queueSize := repo.GetQueueSize(data.GuildID)
-	if queueSize == 1 {
-		response = util.BuildPlayerResponseData(
-			"Play a song",
-			fmt.Sprintf("Playing %s\n%s\nrequested by <@%d>", title, util.ConvertSecondsToVidLength(duration), data.Member.User.ID),
-			"Playing",
-			embed_color.Playing,
-		)
+		queueSize := repo.GetQueueSize(data.GuildID)
+		if queueSize == 1 {
+			response = util.BuildPlayerResponseData(
+				"Play a song",
+				fmt.Sprintf(
+					"Playing %s\n%s\nrequested by <@%d>",
+					result[0].Title,
+					util.ConvertSecondsToVidLength(result[0].Duration),
+					data.Member.User.ID,
+				),
+				"Playing",
+				embed_color.Playing,
+			)
+		} else {
+			response = util.BuildPlayerResponseData(
+				"Play a song",
+				fmt.Sprintf(
+					"Added %s\n%s\nrequested by <@%d>",
+					result[0].Title,
+					util.ConvertSecondsToVidLength(result[0].Duration),
+					data.Member.User.ID,
+				),
+				fmt.Sprintf("#%d in queue", queueSize),
+				embed_color.Playing,
+			)
+		}
 	} else {
+		err = repo.AddSongToQueueMultiple(data.GuildID, data.Member.User.ID, result)
+		if err != nil {
+			log.Println(err)
+			response = util.BuildPlayerResponseData(
+				"Can't add songs :(",
+				"Unknown Error",
+				"Error",
+				embed_color.Error,
+			)
+			if err != nil {
+				log.Println(err)
+			}
+			return
+		}
+
+		err = bh_context.GetVoiceClientManager().StartClient(data.GuildID, *userVoiceChannel)
+		if err != nil {
+			log.Println(err)
+			response = util.BuildPlayerResponseData(
+				"Can't start player :(",
+				"Unknown Error",
+				"Error",
+				embed_color.Error,
+			)
+			if err != nil {
+				log.Println(err)
+			}
+			return
+		}
+
+		queueSize := repo.GetQueueSize(data.GuildID)
 		response = util.BuildPlayerResponseData(
 			"Play a song",
-			fmt.Sprintf("Added %s\n%s\nrequested by <@%d>", title, util.ConvertSecondsToVidLength(duration), data.Member.User.ID),
-			fmt.Sprintf("#%d in queue", queueSize),
+			fmt.Sprintf(
+				"Added %d song%s requested by <@%d>",
+				len(result),
+				util.Ternary(len(result) > 1, "s", ""),
+				data.Member.User.ID,
+			),
+			fmt.Sprintf("%d song%s in queue", queueSize, util.Ternary(queueSize > 1, "s", "")),
 			embed_color.Playing,
 		)
 	}
+
 }

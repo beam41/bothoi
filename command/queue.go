@@ -70,7 +70,7 @@ func executeQueue(data *discord_models.Interaction) {
 
 	var songQ = repo.GetSongQueue(data.GuildID, offset, 10)
 	var res strings.Builder
-	res.WriteString("Song in queue (Requested by)\n")
+	res.WriteString("Song in queue\n")
 	for i, song := range songQ {
 		res.WriteString(
 			fmt.Sprintf(

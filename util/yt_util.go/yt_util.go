@@ -41,38 +41,49 @@ func isYtVidUrl(testUrl string) bool {
 			return false
 		}
 		return match
+	} else if u.Host == "www.youtube.com" && u.Path == "/playlist" {
+		return true
 	}
+
 	return false
 }
 
-func SearchYt(searchStr string) (title string, ytID string, duration uint32, noResult bool, err error) {
+type SearchResult struct {
+	Title    string
+	YtID     string
+	Duration uint32
+}
+
+func SearchYt(searchStr string) ([]SearchResult, error) {
 	var cmd *exec.Cmd
 	if !isYtVidUrl(searchStr) {
 		// add \" to escape quotes in cmd
 		slashedStr := strings.Replace(searchStr, "\"", "\\\"", -1)
-		cmd = exec.Command("youtube-dl", "--get-title", "--get-id", "--get-duration", "-f", "bestaudio", fmt.Sprintf("ytsearch:\"%s\"", slashedStr))
+		// bestaudio may not be available, so I have to include it
+		cmd = exec.Command("youtube-dl", "--get-title", "--get-id", "--get-duration", "-f", "bestaudio", "--ignore-errors", fmt.Sprintf("ytsearch:\"%s\"", slashedStr))
 	} else {
-		cmd = exec.Command("youtube-dl", "--get-title", "--get-id", "--get-duration", "-f", "bestaudio", searchStr)
+		cmd = exec.Command("youtube-dl", "--get-title", "--get-id", "--get-duration", "-f", "bestaudio", "--ignore-errors", searchStr)
 	}
 	var stdout bytes.Buffer
 	cmd.Stdout = &stdout
-	err = cmd.Run()
-	if err != nil {
-		noResult = true
-		return
-	}
+	// even when we ignore-errors, youtube-dl still exit with non-zero if there are errors
+	err := cmd.Run()
 	output := strings.TrimSpace(stdout.String())
 	if output == "" {
-		noResult = true
-		return
+		return []SearchResult{}, err
 	}
-	results := strings.Split(output, "\n")
-	if len(results) < 3 {
-		noResult = true
-		return
+	strResults := strings.Split(output, "\n")
+	if len(strResults)%3 != 0 {
+		return []SearchResult{}, err
 	}
-	title = results[0]
-	ytID = results[1]
-	duration = util.ConvertVidLengthToSeconds(results[2])
-	return
+	results := make([]SearchResult, len(strResults)/3)
+	for i, j := 0, 0; i < len(results); i, j = i+1, j+3 {
+		results[i] = SearchResult{
+			Title:    strResults[j],
+			YtID:     strResults[j+1],
+			Duration: util.ConvertVidLengthToSeconds(strResults[j+2]),
+		}
+	}
+
+	return results, err
 }
