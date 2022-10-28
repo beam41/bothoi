@@ -99,8 +99,9 @@ func executePlay(data *discord_models.Interaction) {
 		response = util.BuildPlayerResponseData(
 			"Play a song",
 			fmt.Sprintf(
-				"Playing %s\n%s\nrequested by <@%d>",
+				"Playing [%s](https://youtu.be/%s) | %s\nrequested by <@%d>",
 				result[0].Title,
+				result[0].YtID,
 				util.ConvertSecondsToVidLength(result[0].Duration),
 				data.Member.User.ID,
 			),
@@ -111,8 +112,9 @@ func executePlay(data *discord_models.Interaction) {
 		response = util.BuildPlayerResponseData(
 			"Play a song",
 			fmt.Sprintf(
-				"Added %s\n%s\nrequested by <@%d>",
+				"Added [%s](https://youtu.be/%s) | %s\nrequested by <@%d>",
 				result[0].Title,
+				result[0].YtID,
 				util.ConvertSecondsToVidLength(result[0].Duration),
 				data.Member.User.ID,
 			),

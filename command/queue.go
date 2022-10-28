@@ -47,9 +47,10 @@ func executeQueue(data *discord_models.Interaction) {
 	for i, song := range songQ {
 		res.WriteString(
 			fmt.Sprintf(
-				"%s %s | `%s` | <@%d>\n",
+				"%s [%s](https://youtu.be/%s) | `%s` | <@%d>\n",
 				util.Ternary(song.Playing, "**Playing:**", strconv.Itoa(offset+i+1)+"."),
 				song.Title,
+				song.YtID,
 				util.ConvertSecondsToVidLength(song.Duration),
 				song.RequesterID,
 			),
