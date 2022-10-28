@@ -14,7 +14,7 @@ const commandStop = "stop"
 
 func executeStop(data *discord_models.Interaction) {
 	var response discord_models.InteractionResponse
-	defer responseNoLoading(data.ID, data.Token, response)
+	defer func() { postResponse(data.ID, data.Token, response) }()
 
 	userVoiceChannel := repo.GetChannelIDByUserIDAndGuildID(data.Member.User.ID, data.GuildID)
 	clientVoiceChannel := repo.GetChannelIDByUserIDAndGuildID(config.BotID, data.GuildID)

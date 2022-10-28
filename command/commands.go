@@ -62,7 +62,7 @@ func checkNotSameChannelError[InteractionResponse discord_models.InteractionResp
 	return false, builder("", "", "", embed_color.EmbedColor(0))
 }
 
-func responseNoLoading(id types.Snowflake, token string, response discord_models.InteractionResponse) {
+func postResponse(id types.Snowflake, token string, response discord_models.InteractionResponse) {
 	url := config.InteractionResponseEndpoint
 	url = strings.Replace(url, "<interaction_id>", strconv.FormatUint(uint64(id), 10), 1)
 	url = strings.Replace(url, "<interaction_token>", token, 1)
@@ -75,22 +75,15 @@ func responseNoLoading(id types.Snowflake, token string, response discord_models
 
 func postLoading(id types.Snowflake, token string, cmd string) {
 	// post waiting prevent response timeout
-	url := config.InteractionResponseEndpoint
-	url = strings.Replace(url, "<interaction_id>", strconv.FormatUint(uint64(id), 10), 1)
-	url = strings.Replace(url, "<interaction_token>", token, 1)
-
-	_, err := http_util.PostJson(url, util.BuildPlayerResponse(
+	postResponse(id, token, util.BuildPlayerResponse(
 		cmd,
 		"Loading...",
 		"Please Wait",
 		embed_color.Default,
 	))
-	if err != nil {
-		log.Println(err)
-	}
 }
 
-func responseAfterLoading(token string, response discord_models.InteractionCallbackData) {
+func patchResponseAfterLoading(token string, response discord_models.InteractionCallbackData) {
 	url := config.InteractionResponseEditEndpoint
 	url = strings.Replace(url, "<application_id>", strconv.FormatUint(uint64(config.BotID), 10), 1)
 	url = strings.Replace(url, "<interaction_token>", token, 1)

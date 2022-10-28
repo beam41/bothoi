@@ -20,7 +20,7 @@ func executePlay(data *discord_models.Interaction) {
 	options := util.SliceToMap(data.Data.Options, func(i int, item discord_models.InteractionOption) string { return item.Name })
 
 	var response discord_models.InteractionCallbackData
-	defer responseAfterLoading(data.Token, response)
+	defer func() { patchResponseAfterLoading(data.Token, response) }()
 
 	userVoiceChannel := repo.GetChannelIDByUserIDAndGuildID(data.Member.User.ID, data.GuildID)
 	clientVoiceChannel := repo.GetChannelIDByUserIDAndGuildID(data.Member.User.ID, config.BotID)
