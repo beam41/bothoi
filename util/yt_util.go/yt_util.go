@@ -21,6 +21,8 @@ func GetYoutubeDownloadUrl(ytID string) (string, error) {
 	return urlStr, nil
 }
 
+var ytIDRegex = regexp.MustCompile("^[a-zA-Z0-9_-]{11}$")
+
 func isYtVidUrl(testUrl string) bool {
 	u, err := url.Parse(testUrl)
 	if err != nil {
@@ -31,19 +33,13 @@ func isYtVidUrl(testUrl string) bool {
 		if u.Path == "/watch" {
 			v := u.Query().Get("v")
 			// yt vid id is 11 characters long
-			match, err := regexp.MatchString("^[a-zA-Z0-9_-]{11}$", v)
-			if err != nil {
-				return false
-			}
+			match := ytIDRegex.MatchString(v)
 			return match
 		} else if u.Path == "/playlist" {
 			return true
 		}
 	} else if strings.Contains(u.Hostname(), "youtu.be") {
-		match, err := regexp.MatchString("^/[a-zA-Z0-9_-]{11}$", u.Path)
-		if err != nil {
-			return false
-		}
+		match := ytIDRegex.MatchString(u.Path)
 		return match
 	}
 
