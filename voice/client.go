@@ -58,35 +58,24 @@ func (client *client) connWriteJSON(v any) (err error) {
 	return
 }
 
-func (client *client) voiceRestart() {
+func (client *client) voiceRestart(resume bool) {
 	defer func() {
 		if err := recover(); err != nil {
 			log.Println(client.guildID, "voiceRestart panic occurred:", err)
 		}
 	}()
 	client.Lock()
+	client.udpReadyWait.L.Lock()
 	client.udpReady = false
-	client.resume = true
+	client.udpReadyWait.Signal()
+	client.udpReadyWait.L.Unlock()
+	client.resume = resume
 	client.Unlock()
 	client.vcCtxCancel()
-	err := client.c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(4006, ""))
-	if err != nil {
-		log.Println(client.guildID, err)
-	}
-}
-
-func (client *client) voiceReset() {
-	defer func() {
-		if err := recover(); err != nil {
-			log.Println(client.guildID, "voiceReset panic occurred:", err)
-		}
-	}()
-	client.Lock()
-	client.udpReady = false
-	client.resume = false
-	client.Unlock()
-	client.vcCtxCancel()
-	err := client.c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseTryAgainLater, ""))
+	err := client.c.WriteMessage(
+		websocket.CloseMessage,
+		websocket.FormatCloseMessage(util.Ternary(resume, 4006, websocket.CloseTryAgainLater), ""),
+	)
 	if err != nil {
 		log.Println(client.guildID, err)
 	}
@@ -165,9 +154,9 @@ func (client *client) connection() {
 				client.RUnlock()
 				log.Println(client.guildID, "read err", err)
 				if websocket.IsUnexpectedCloseError(err, 4015) {
-					client.voiceReset()
+					client.voiceRestart(false)
 				} else {
-					client.voiceRestart()
+					client.voiceRestart(true)
 				}
 				return
 			}
@@ -243,12 +232,12 @@ func (client *client) connection() {
 			if prevNonce != hbNonce {
 				// handle nonce error
 				log.Println(client.guildID, "Nonce invalid")
-				client.voiceReset()
+				client.voiceRestart(false)
 				return
 			}
 		case <-heartbeatIntervalTicker.C:
 			log.Println(client.guildID, "Timeout")
-			client.voiceRestart()
+			client.voiceRestart(true)
 			return
 		case <-client.ctx.Done():
 			return
@@ -337,7 +326,7 @@ func (client *client) udpKeepAlive(i time.Duration) {
 		_, err := client.uc.Write(packet)
 		if err != nil {
 			log.Println(client.guildID, "Udp err", err)
-			client.voiceRestart()
+			client.voiceRestart(true)
 			return
 		}
 

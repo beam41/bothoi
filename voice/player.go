@@ -183,7 +183,7 @@ func (client *client) sendSong(encodeSession *dca.EncodeSession) bool {
 
 		if err != nil {
 			log.Println(client.guildID, "player udp err", err)
-			client.voiceRestart()
+			client.voiceRestart(true)
 			return false
 
 		}
