@@ -38,6 +38,6 @@ func executeStop(gatewayClient *gateway.Client, data *discord_models.Interaction
 		"Stopped",
 		"Stopped by the request of <@"+strconv.FormatUint(uint64(data.Member.User.ID), 10)+">",
 		"",
-		embed_color.SuccessInterruptHigh,
+		embed_color.ErrorLow,
 	)
 }

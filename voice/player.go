@@ -54,7 +54,7 @@ func postNoSong(channelID types.Snowflake) {
 		"Stopped",
 		"No more song in queue",
 		"",
-		embed_color.SuccessInterruptHigh,
+		embed_color.ErrorLow,
 	))
 }
 
@@ -71,7 +71,7 @@ func (client *client) play() {
 
 	// encode settings
 	options := dca.StdEncodeOptions
-	options.Volume = 128
+	options.Volume = 200
 	options.FrameRate = config.DcaFramerate
 	options.FrameDuration = config.DcaFrameduration
 	options.RawOutput = true
