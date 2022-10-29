@@ -5,7 +5,6 @@ import (
 	"bothoi/models/types"
 	"bothoi/repo"
 	"context"
-	"errors"
 	"log"
 	"sync"
 )
@@ -21,12 +20,24 @@ func NewClientManager() *ClientManager {
 	}
 }
 
-// createClient make new client from guild
-func (clm *ClientManager) createClient(guildID types.Snowflake) *client {
-	if clm.list[guildID] != nil {
-		return clm.list[guildID]
+// ClientStart start the client if not started already
+func (clm *ClientManager) ClientStart(guildID types.Snowflake) (bool, chan<- string, chan<- *discord_models.VoiceServer) {
+	clm.RLock()
+	var cli = clm.list[guildID]
+	if cli != nil {
+		clm.RUnlock()
+		cli.RLock()
+		defer cli.RUnlock()
+		if cli.running {
+			go cli.play()
+		}
+		return false, nil, nil
 	}
+	clm.RUnlock()
+
+	log.Println(guildID, "Starting client")
 	clm.Lock()
+	defer clm.Unlock()
 	ctx, cancel := context.WithCancel(context.Background())
 	clm.list[guildID] = &client{
 		guildID:         guildID,
@@ -37,102 +48,72 @@ func (clm *ClientManager) createClient(guildID types.Snowflake) *client {
 		stopWaitForExit: make(chan struct{}),
 		clm:             clm,
 	}
-	clm.Unlock()
-	return clm.list[guildID]
-}
-
-// removeClient stop playing and remove the client from the list
-func (clm *ClientManager) removeClient(guildID types.Snowflake) error {
-	clm.Lock()
-	defer clm.Unlock()
-	var client = clm.list[guildID]
-	if client == nil {
-		return errors.New("client not found")
-	}
-	client.Lock()
-	defer client.Unlock()
-	client.destroyed = true
-	client.udpReadyWait.Broadcast()
-	client.pauseWait.Broadcast()
-	client.ctxCancel()
-	client.closeConnection()
-	delete(clm.list, guildID)
-	return nil
-}
-
-// PauseClient pause/resume the music player return true if the player is paused
-func (clm *ClientManager) PauseClient(guildID types.Snowflake) (bool, error) {
-	clm.Lock()
-	defer clm.Unlock()
-	var client = clm.list[guildID]
-	if client == nil {
-		return false, errors.New("client not found")
-	}
-	client.RLock()
-	defer client.RUnlock()
-	client.pauseWait.L.Lock()
-	client.pausing = !client.pausing
-	if !client.pausing {
-		client.pauseWait.Broadcast()
-	}
-	client.pauseWait.L.Unlock()
-	return client.pausing, nil
-}
-
-// SkipSong skip a song
-func (clm *ClientManager) SkipSong(guildID types.Snowflake) error {
-	clm.Lock()
-	defer clm.Unlock()
-	var client = clm.list[guildID]
-	if client == nil {
-		return errors.New("client not found")
-	}
-	client.RLock()
-	defer client.RUnlock()
-	client.skip = true
-	client.pauseWait.Broadcast()
-	return nil
-}
-
-// StartClient start the client if not started already
-func (clm *ClientManager) StartClient(guildID types.Snowflake) (bool, chan<- string, chan<- *discord_models.VoiceServer) {
-	clm.RLock()
-	var client = clm.list[guildID]
-	if client != nil {
-		clm.RUnlock()
-		client.RLock()
-		defer client.RUnlock()
-		if client.running {
-			go client.play()
-		}
-		return false, nil, nil
-	}
-	clm.RUnlock()
-
-	log.Println(guildID, "Starting client")
-	client = clm.createClient(guildID)
 	sessionIDChan := make(chan string)
 	voiceServerChan := make(chan *discord_models.VoiceServer)
 
 	// wait for session id and voice server
 	go func() {
 		sessionID, voiceServer := <-sessionIDChan, <-voiceServerChan
-		client.Lock()
-		defer client.Unlock()
-		client.sessionID = &sessionID
-		client.voiceServer = voiceServer
-		go client.connect()
-		go client.play()
+		clm.list[guildID].Lock()
+		defer clm.list[guildID].Unlock()
+		clm.list[guildID].sessionID = &sessionID
+		clm.list[guildID].voiceServer = voiceServer
+		go clm.list[guildID].connect()
+		go clm.list[guildID].play()
 	}()
 	return true, sessionIDChan, voiceServerChan
 }
 
-// StopClient remove client from list and properly leave
-func (clm *ClientManager) StopClient(guildID types.Snowflake) error {
+// ClientStop remove client from list and properly leave
+func (clm *ClientManager) ClientStop(guildID types.Snowflake) bool {
 	_ = repo.DeleteSongsInGuild(guildID)
-	err := clm.removeClient(guildID)
-	if err != nil {
-		return err
+	clm.Lock()
+	defer clm.Unlock()
+	var cli = clm.list[guildID]
+	if cli == nil {
+		return false
 	}
-	return nil
+	cli.Lock()
+	defer cli.Unlock()
+	cli.destroyed = true
+	cli.udpReadyWait.Broadcast()
+	cli.pauseWait.Broadcast()
+	cli.ctxCancel()
+	cli.connCloseNormal()
+	delete(clm.list, guildID)
+	return true
+}
+
+// ClientPauseSong pause/resume the music player return true if the player is paused
+func (clm *ClientManager) ClientPauseSong(guildID types.Snowflake) (found, pausing bool) {
+	clm.Lock()
+	defer clm.Unlock()
+	var cli = clm.list[guildID]
+	if cli == nil {
+		return false, false
+	}
+	cli.RLock()
+	defer cli.RUnlock()
+	cli.pauseWait.L.Lock()
+	cli.pausing = !cli.pausing
+	if !cli.pausing {
+		cli.pauseWait.Broadcast()
+	}
+	cli.pauseWait.L.Unlock()
+	return true, cli.pausing
+}
+
+// ClientSkipSong skip a song
+func (clm *ClientManager) ClientSkipSong(guildID types.Snowflake) bool {
+	clm.Lock()
+	defer clm.Unlock()
+	var cli = clm.list[guildID]
+	if cli == nil {
+		return false
+	}
+	cli.RLock()
+	defer cli.RUnlock()
+	cli.skip = true
+	cli.pauseWait.Broadcast()
+	return true
 }

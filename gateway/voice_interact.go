@@ -5,19 +5,9 @@ import (
 	"bothoi/models/types"
 )
 
-// PauseVoiceClient pause/resume the music player return true if the player is paused
-func (client *Client) PauseVoiceClient(guildID types.Snowflake) (bool, error) {
-	return client.voiceClientManager.PauseClient(guildID)
-}
-
-// SkipSong skip a song
-func (client *Client) SkipSong(guildID types.Snowflake) error {
-	return client.voiceClientManager.SkipSong(guildID)
-}
-
-// StartVoiceClient start the client if not started already
-func (client *Client) StartVoiceClient(guildID, channelID types.Snowflake) error {
-	connect, sessionIDChan, voiceServerChan := client.voiceClientManager.StartClient(guildID)
+// VoiceClientStart start the client if not started already
+func (client *Client) VoiceClientStart(guildID, channelID types.Snowflake) error {
+	connect, sessionIDChan, voiceServerChan := client.voiceClientManager.ClientStart(guildID)
 	if connect {
 		createVoice := discord_models.NewVoiceStateUpdate(guildID, &channelID, false, true)
 		err := client.gatewayConnWriteJSON(createVoice)
@@ -26,9 +16,9 @@ func (client *Client) StartVoiceClient(guildID, channelID types.Snowflake) error
 		}
 		sessionIDChanRelay := make(chan string)
 		voiceServerChanRelay := make(chan *discord_models.VoiceServer)
-		client.voiceWaiter.Lock()
-		client.voiceWaiter.list[guildID] = voiceInstantiateChan{sessionIDChanRelay, voiceServerChanRelay}
-		client.voiceWaiter.Unlock()
+		client.voiceInstantiateList.Lock()
+		client.voiceInstantiateList.list[guildID] = voiceInstantiateChan{sessionIDChanRelay, voiceServerChanRelay}
+		client.voiceInstantiateList.Unlock()
 		sessionIDChan <- <-sessionIDChanRelay
 		voiceServerChan <- <-voiceServerChanRelay
 		client.cleanVoiceInstantiateChan(guildID)
@@ -36,20 +26,33 @@ func (client *Client) StartVoiceClient(guildID, channelID types.Snowflake) error
 	return nil
 }
 
-// StopVoiceClient remove client from list and properly leave
-func (client *Client) StopVoiceClient(guildID types.Snowflake) error {
-	err := client.voiceClientManager.StopClient(guildID)
-	if err != nil {
-		return err
+// VoiceClientStop remove client from list and properly leave
+func (client *Client) VoiceClientStop(guildID types.Snowflake) (success bool, err error) {
+	success = client.voiceClientManager.ClientStop(guildID)
+	if !success {
+		return
 	}
 	client.cleanVoiceInstantiateChan(guildID)
 	leaveVoice := discord_models.NewVoiceStateUpdate(guildID, nil, false, false)
 	err = client.gatewayConnWriteJSON(leaveVoice)
-	return err
+	if err != nil {
+		success = false
+	}
+	return
 }
 
 func (client *Client) cleanVoiceInstantiateChan(guildID types.Snowflake) {
-	client.voiceWaiter.Lock()
-	defer client.voiceWaiter.Unlock()
-	delete(client.voiceWaiter.list, guildID)
+	client.voiceInstantiateList.Lock()
+	defer client.voiceInstantiateList.Unlock()
+	delete(client.voiceInstantiateList.list, guildID)
+}
+
+// VoiceClientPauseSong pause/resume the music player return true if the player is paused
+func (client *Client) VoiceClientPauseSong(guildID types.Snowflake) (found bool, pausing bool) {
+	return client.voiceClientManager.ClientPauseSong(guildID)
+}
+
+// VoiceClientSkipSong skip a song
+func (client *Client) VoiceClientSkipSong(guildID types.Snowflake) bool {
+	return client.voiceClientManager.ClientSkipSong(guildID)
 }

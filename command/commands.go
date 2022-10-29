@@ -19,7 +19,7 @@ type Manager struct {
 }
 
 func NewCommandManager(gatewayClient *gateway.Client) *Manager {
-	gatewayClient.SetCommandExecutorList(
+	gatewayClient.SetInteractionExecutorList(
 		map[string]func(*gateway.Client, *discord_models.Interaction){
 			commandPlay:   executePlay,
 			commandQueue:  executeQueue,

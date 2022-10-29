@@ -30,18 +30,18 @@ type Client struct {
 		sequenceNumber *uint64
 		session        *discord_models.ReadyEvent
 	}
-	voiceWaiter struct {
+	voiceInstantiateList struct {
 		sync.RWMutex
 		list map[types.Snowflake]voiceInstantiateChan
 	}
-	resume              bool
-	commandExecutorList map[string]func(*Client, *discord_models.Interaction)
+	resume                  bool
+	interactionExecutorList map[string]func(*Client, *discord_models.Interaction)
 }
 
 func NewClient(voiceClientManager *voice.ClientManager) *Client {
 	return &Client{
 		voiceClientManager: voiceClientManager,
-		voiceWaiter: struct {
+		voiceInstantiateList: struct {
 			sync.RWMutex
 			list map[types.Snowflake]voiceInstantiateChan
 		}{list: make(map[types.Snowflake]voiceInstantiateChan)},

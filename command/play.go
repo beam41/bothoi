@@ -70,7 +70,7 @@ func executePlay(gatewayClient *gateway.Client, data *discord_models.Interaction
 		}
 	}
 
-	err := gatewayClient.StartVoiceClient(data.GuildID, *userVoiceChannel)
+	err := gatewayClient.VoiceClientStart(data.GuildID, *userVoiceChannel)
 	if err != nil {
 		log.Println(err)
 		response = util.BuildPlayerResponseData(

@@ -58,7 +58,14 @@ func (client *client) connWriteJSON(v any) (err error) {
 	return
 }
 
-func (client *client) voiceRestart(resume bool) {
+func (client *client) connCloseNormal() {
+	err := client.c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+	if err != nil {
+		log.Println(client.guildID, err)
+	}
+}
+
+func (client *client) connectionRestart(resume bool) {
 	defer func() {
 		if err := recover(); err != nil {
 			log.Println(client.guildID, "voiceRestart panic occurred:", err)
@@ -154,9 +161,9 @@ func (client *client) connection() {
 				client.RUnlock()
 				log.Println(client.guildID, "read err", err)
 				if websocket.IsUnexpectedCloseError(err, 4015) {
-					client.voiceRestart(false)
+					client.connectionRestart(false)
 				} else {
-					client.voiceRestart(true)
+					client.connectionRestart(true)
 				}
 				return
 			}
@@ -184,7 +191,7 @@ func (client *client) connection() {
 				}
 				client.udpInfo = &data
 				// start the UDP connection
-				go client.connectUdp()
+				go client.udpConnect()
 			case voice_opcode.SessionDescription:
 				var data discord_models.SessionDescription
 				err := mapstructure.WeakDecode(payload.D, &data)
@@ -195,7 +202,7 @@ func (client *client) connection() {
 				client.sessionDescription = &data
 			case voice_opcode.Resumed:
 				log.Println(client.guildID, "Resumed")
-				client.connectUdp()
+				client.udpConnect()
 			}
 		}
 	}()
@@ -232,12 +239,12 @@ func (client *client) connection() {
 			if prevNonce != hbNonce {
 				// handle nonce error
 				log.Println(client.guildID, "Nonce invalid")
-				client.voiceRestart(false)
+				client.connectionRestart(false)
 				return
 			}
 		case <-heartbeatIntervalTicker.C:
 			log.Println(client.guildID, "Timeout")
-			client.voiceRestart(true)
+			client.connectionRestart(true)
 			return
 		case <-client.ctx.Done():
 			return
@@ -247,7 +254,7 @@ func (client *client) connection() {
 	}
 }
 
-func (client *client) connectUdp() {
+func (client *client) udpConnect() {
 	raddr, err := net.ResolveUDPAddr("udp", client.udpInfo.IP+":"+strconv.Itoa(int(client.udpInfo.Port)))
 	if err != nil {
 		log.Println(client.guildID, err)
@@ -259,7 +266,7 @@ func (client *client) connectUdp() {
 		return
 	}
 	client.uc = conn
-	ip, port := client.performIpDiscovery()
+	ip, port := client.udpIpDiscovery()
 	err = client.connWriteJSON(discord_models.NewVoiceSelectProtocol(ip, port, config.PreferredMode))
 	if err != nil {
 		log.Println(client.guildID, err)
@@ -272,7 +279,7 @@ func (client *client) connectUdp() {
 	go client.udpKeepAlive(time.Second * 5)
 }
 
-func (client *client) performIpDiscovery() (ip string, port uint16) {
+func (client *client) udpIpDiscovery() (ip string, port uint16) {
 	send := make([]byte, 70)
 
 	binary.BigEndian.PutUint32(send, client.udpInfo.SSRC)
@@ -326,7 +333,7 @@ func (client *client) udpKeepAlive(i time.Duration) {
 		_, err := client.uc.Write(packet)
 		if err != nil {
 			log.Println(client.guildID, "Udp err", err)
-			client.voiceRestart(true)
+			client.connectionRestart(true)
 			return
 		}
 
@@ -369,20 +376,13 @@ func (client *client) waitForExit() {
 		if client.running {
 			client.RUnlock()
 			log.Println(client.guildID, "Idle Timeout")
-			err := client.clm.StopClient(client.guildID)
-			if err != nil {
-				log.Println(client.guildID, err)
+			success := client.clm.ClientStop(client.guildID)
+			if !success {
+				log.Println(client.guildID, "Cannot stop")
 			}
 		} else {
 			client.RUnlock()
 			return
 		}
-	}
-}
-
-func (client *client) closeConnection() {
-	err := client.c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(1000, ""))
-	if err != nil {
-		log.Println(client.guildID, err)
 	}
 }

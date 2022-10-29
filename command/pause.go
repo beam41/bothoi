@@ -24,11 +24,11 @@ func executePause(gatewayClient *gateway.Client, data *discord_models.Interactio
 		return
 	}
 
-	pausing, err := gatewayClient.PauseVoiceClient(data.GuildID)
-	if err != nil {
+	found, pausing := gatewayClient.VoiceClientPauseSong(data.GuildID)
+	if !found {
 		response = util.BuildPlayerResponse(
 			"Pause Error",
-			"Cannot be paused/resumed",
+			"Client not found",
 			"error",
 			embed_color.Error,
 		)

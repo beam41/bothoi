@@ -23,8 +23,8 @@ func executeSkip(gatewayClient *gateway.Client, data *discord_models.Interaction
 		return
 	}
 
-	err := gatewayClient.SkipSong(data.GuildID)
-	if err != nil {
+	success := gatewayClient.VoiceClientSkipSong(data.GuildID)
+	if !success {
 		response = util.BuildPlayerResponse(
 			"Skip Error",
 			"Cannot skip",

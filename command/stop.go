@@ -23,8 +23,8 @@ func executeStop(gatewayClient *gateway.Client, data *discord_models.Interaction
 		return
 	}
 
-	err := gatewayClient.StopVoiceClient(data.GuildID)
-	if err != nil {
+	success, _ := gatewayClient.VoiceClientStop(data.GuildID)
+	if !success {
 		response = util.BuildPlayerResponse(
 			"Stopped",
 			"Cannot be stopped",
