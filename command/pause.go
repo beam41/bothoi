@@ -29,7 +29,7 @@ func executePause(gatewayClient *gateway.Client, data *discord_models.Interactio
 		response = util.BuildPlayerResponse(
 			"Pause Error",
 			"Client not found",
-			"error",
+			"",
 			embed_color.Error,
 		)
 		return

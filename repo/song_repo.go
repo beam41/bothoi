@@ -7,29 +7,33 @@ import (
 	"time"
 )
 
-func AddSongToQueue(guildID, requesterID types.Snowflake, ytID, title string, duration, seek uint32) error {
+func AddSongToQueue(guildID, requesterID, requestChannelID types.Snowflake, ytID, title string, duration, seek uint32, postMsgPlaying bool) error {
 	result := db.Create(&db_models.Song{
-		GuildID:     guildID,
-		RequesterID: requesterID,
-		RequestedAt: time.Now(),
-		YtID:        ytID,
-		Title:       title,
-		Duration:    duration,
-		Seek:        seek,
+		GuildID:          guildID,
+		RequesterID:      requesterID,
+		RequestChannelID: requestChannelID,
+		RequestedAt:      time.Now(),
+		YtID:             ytID,
+		Title:            title,
+		Duration:         duration,
+		Seek:             seek,
+		PostMsgPlaying:   postMsgPlaying,
 	})
 	return result.Error
 }
 
-func AddSongToQueueMultiple(guildID, requesterID types.Snowflake, ytResult []yt_util.SearchResult) error {
+func AddSongToQueueMultiple(guildID, requesterID, requestChannelID types.Snowflake, ytResult []yt_util.SearchResult) error {
 	songs := make([]db_models.Song, len(ytResult))
 	for i, result := range ytResult {
 		songs[i] = db_models.Song{
-			GuildID:     guildID,
-			RequesterID: requesterID,
-			RequestedAt: time.Now(),
-			YtID:        result.YtID,
-			Title:       result.Title,
-			Duration:    result.Duration,
+			GuildID:          guildID,
+			RequesterID:      requesterID,
+			RequestChannelID: requestChannelID,
+			RequestedAt:      time.Now(),
+			YtID:             result.YtID,
+			Title:            result.Title,
+			Duration:         result.Duration,
+			PostMsgPlaying:   true,
 		}
 	}
 	result := db.Create(&songs)

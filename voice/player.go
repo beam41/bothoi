@@ -3,19 +3,60 @@ package voice
 import (
 	"bothoi/config"
 	"bothoi/models/discord_models"
+	"bothoi/models/types"
+	"bothoi/references/embed_color"
 	"bothoi/repo"
+	"bothoi/util"
+	"bothoi/util/http_util"
 	"bothoi/util/yt_util.go"
 	"crypto/rand"
 	"encoding/binary"
+	"fmt"
 	"golang.org/x/crypto/nacl/secretbox"
 	"io"
 	"log"
 	"math"
 	"math/big"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/jonas747/dca/v2"
 )
+
+func postMsg(channelID types.Snowflake, data discord_models.InteractionCallbackData) {
+	url := config.CreateMessageEndpoint
+	url = strings.Replace(url, "<channel_id>", strconv.FormatUint(uint64(channelID), 10), 1)
+
+	_, err := http_util.PostJsonH(url, data, map[string]string{"Authorization": "Bot " + config.BotToken})
+	if err != nil {
+		log.Println(err)
+	}
+}
+
+func postPlaying(channelID, requesterID types.Snowflake, title, ytID string, duration uint32) {
+	postMsg(channelID, util.BuildPlayerResponseData(
+		"Currently Playing",
+		fmt.Sprintf(
+			"Playing [%s](https://youtu.be/%s) | `%s`\nrequested by <@%d>",
+			title,
+			ytID,
+			util.ConvertSecondsToVidLength(duration),
+			requesterID,
+		),
+		"",
+		embed_color.SuccessContinue,
+	))
+}
+
+func postNoSong(channelID types.Snowflake) {
+	postMsg(channelID, util.BuildPlayerResponseData(
+		"Stopped",
+		"No more song in queue",
+		"",
+		embed_color.SuccessInterruptHigh,
+	))
+}
 
 // play song if not start already
 func (client *client) play() {
@@ -39,10 +80,12 @@ func (client *client) play() {
 	options.Application = dca.AudioApplicationAudio
 
 	// run player
+	prevRequestChannelID := types.Snowflake(0)
 	for {
 		currentSong, err := repo.GetNextSong(client.guildID)
 		if currentSong == nil {
 			// stop player
+			postNoSong(prevRequestChannelID)
 			client.Lock()
 			client.playerRunning = false
 			client.Unlock()
@@ -70,6 +113,9 @@ func (client *client) play() {
 			client.stopWaitForExit <- struct{}{}
 		}
 		client.Unlock()
+		if currentSong.PostMsgPlaying {
+			postPlaying(currentSong.RequestChannelID, currentSong.RequesterID, currentSong.Title, currentSong.YtID, currentSong.Duration)
+		}
 
 		options.StartTime = int(currentSong.Seek)
 		client.playTillComplete(url, options)
@@ -83,6 +129,7 @@ func (client *client) play() {
 		client.playing = false
 		client.Unlock()
 		log.Println(client.guildID, "Played song: ", currentSong.Title)
+		prevRequestChannelID = currentSong.RequestChannelID
 		_ = repo.DeleteSong(currentSong.ID)
 	}
 }

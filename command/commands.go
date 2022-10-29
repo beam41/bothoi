@@ -52,7 +52,7 @@ func checkNotSameChannelError[InteractionResponse discord_models.InteractionResp
 		return true, builder(
 			cmd+" Error",
 			fmt.Sprintf(desc, userID),
-			"Error",
+			"",
 			embed_color.Error,
 		)
 	}

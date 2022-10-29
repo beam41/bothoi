@@ -22,4 +22,5 @@ const (
 	DcaFrameduration                                = 20
 	DcaBufferedFrame                                = int(time.Minute * 3 / (time.Millisecond * DcaFrameduration))
 	InteractionResponseEditEndpoint                 = "https://discord.com/api/webhooks/<application_id>/<interaction_token>/messages/@original"
+	CreateMessageEndpoint                           = "https://discord.com/api/channels/<channel_id>/messages"
 )

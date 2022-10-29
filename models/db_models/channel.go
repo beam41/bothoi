@@ -12,4 +12,5 @@ type Channel struct {
 	OwnerID  types.Snowflake `gorm:"type:INTEGER"`
 
 	VoiceState []VoiceState `gorm:"foreignKey:ChannelID"`
+	Songs      []Song       `gorm:"foreignKey:RequestChannelID"`
 }

@@ -28,7 +28,7 @@ func executeSkip(gatewayClient *gateway.Client, data *discord_models.Interaction
 		response = util.BuildPlayerResponse(
 			"Skip Error",
 			"Cannot skip",
-			"Error",
+			"",
 			embed_color.Error,
 		)
 		return
@@ -37,7 +37,7 @@ func executeSkip(gatewayClient *gateway.Client, data *discord_models.Interaction
 	response = util.BuildPlayerResponse(
 		"Skipped",
 		fmt.Sprintf("Skipped by the request of <@%d>", uint64(data.Member.User.ID)),
-		"Skipped",
+		"",
 		embed_color.SuccessInterrupt,
 	)
 }

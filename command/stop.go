@@ -28,7 +28,7 @@ func executeStop(gatewayClient *gateway.Client, data *discord_models.Interaction
 		response = util.BuildPlayerResponse(
 			"Stopped",
 			"Cannot be stopped",
-			"Error",
+			"",
 			embed_color.Error,
 		)
 		return
@@ -37,7 +37,7 @@ func executeStop(gatewayClient *gateway.Client, data *discord_models.Interaction
 	response = util.BuildPlayerResponse(
 		"Stopped",
 		"Stopped by the request of <@"+strconv.FormatUint(uint64(data.Member.User.ID), 10)+">",
-		"Stopped",
+		"",
 		embed_color.SuccessInterruptHigh,
 	)
 }

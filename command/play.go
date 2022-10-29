@@ -45,25 +45,26 @@ func executePlay(gatewayClient *gateway.Client, data *discord_models.Interaction
 		if s, ok := options["seek"]; ok {
 			seek = util.ConvertVidLengthToSeconds(s.Value.(string))
 		}
-		err := repo.AddSongToQueue(data.GuildID, data.Member.User.ID, result[0].YtID, result[0].Title, result[0].Duration, seek)
+		queueSize := repo.GetQueueSize(data.GuildID)
+		err := repo.AddSongToQueue(data.GuildID, data.Member.User.ID, data.ChannelID, result[0].YtID, result[0].Title, result[0].Duration, seek, queueSize != 0)
 		if err != nil {
 			log.Println(err)
 			response = util.BuildPlayerResponseData(
 				"Play Error",
 				"Can't add a song",
-				"Error",
+				"",
 				embed_color.Error,
 			)
 			return
 		}
 	} else {
-		err := repo.AddSongToQueueMultiple(data.GuildID, data.Member.User.ID, result)
+		err := repo.AddSongToQueueMultiple(data.GuildID, data.Member.User.ID, data.ChannelID, result)
 		if err != nil {
 			log.Println(err)
 			response = util.BuildPlayerResponseData(
 				"Play Error",
 				"Can't add songs",
-				"Error",
+				"",
 				embed_color.Error,
 			)
 			return
@@ -76,7 +77,7 @@ func executePlay(gatewayClient *gateway.Client, data *discord_models.Interaction
 		response = util.BuildPlayerResponseData(
 			"Play Error",
 			"Can't start player",
-			"Error",
+			"",
 			embed_color.Error,
 		)
 		return
