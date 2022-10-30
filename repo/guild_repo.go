@@ -8,24 +8,6 @@ import (
 )
 
 func UpsertGuild(guild *discord_models.GuildCreate) {
-	joinedAt, _ := time.Parse(time.RFC3339, string(guild.JoinedAt))
-	db.Clauses(clause.OnConflict{
-		UpdateAll: true,
-	}).Create(&db_models.Guild{
-		ID:          guild.ID,
-		Name:        guild.Name,
-		Icon:        guild.Icon,
-		IconHash:    guild.IconHash,
-		Owner:       guild.Owner,
-		MaxMembers:  guild.MaxMembers,
-		Description: guild.Description,
-		JoinedAt:    joinedAt,
-		MemberCount: guild.MemberCount,
-		Large:       guild.Large,
-		Unavailable: guild.Unavailable,
-		OwnerID:     guild.OwnerID,
-	})
-
 	users := make([]db_models.User, len(guild.Members))
 	members := make([]db_models.GuildMember, len(guild.Members))
 	for i, member := range guild.Members {
@@ -72,14 +54,6 @@ func UpsertGuild(guild *discord_models.GuildCreate) {
 			CommunicationDisabledUntil: communicationDisabledUntil,
 		}
 	}
-	if len(guild.Members) > 0 {
-		db.Clauses(clause.OnConflict{
-			UpdateAll: true,
-		}).Create(&users)
-		db.Clauses(clause.OnConflict{
-			UpdateAll: true,
-		}).Create(&members)
-	}
 
 	channels := make([]db_models.Channel, len(guild.Channels))
 	for i, channel := range guild.Channels {
@@ -92,11 +66,6 @@ func UpsertGuild(guild *discord_models.GuildCreate) {
 			GuildID:  guild.ID,
 			OwnerID:  channel.OwnerID,
 		}
-	}
-	if len(guild.Channels) > 0 {
-		db.Clauses(clause.OnConflict{
-			UpdateAll: true,
-		}).Create(&channels)
 	}
 
 	voiceStates := make([]db_models.VoiceState, len(guild.VoiceStates))
@@ -116,9 +85,31 @@ func UpsertGuild(guild *discord_models.GuildCreate) {
 			ChannelID:               voiceState.ChannelID,
 		}
 	}
-	if len(guild.VoiceStates) > 0 {
+
+	if len(guild.Members) > 0 {
 		db.Clauses(clause.OnConflict{
 			UpdateAll: true,
-		}).Create(&voiceStates)
+		}).Create(&users)
 	}
+
+	joinedAt, _ := time.Parse(time.RFC3339, string(guild.JoinedAt))
+	db.Clauses(clause.OnConflict{
+		UpdateAll: true,
+	}).Create(&db_models.Guild{
+		ID:          guild.ID,
+		Name:        guild.Name,
+		Icon:        guild.Icon,
+		IconHash:    guild.IconHash,
+		Owner:       guild.Owner,
+		MaxMembers:  guild.MaxMembers,
+		Description: guild.Description,
+		JoinedAt:    joinedAt,
+		MemberCount: guild.MemberCount,
+		Large:       guild.Large,
+		Unavailable: guild.Unavailable,
+		OwnerID:     guild.OwnerID,
+		Members:     members,
+		Channels:    channels,
+		VoiceStates: voiceStates,
+	})
 }

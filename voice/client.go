@@ -209,7 +209,7 @@ func (client *client) connection() {
 
 	// keeping heartbeats and prevent application from closing.
 	interval := <-heartbeatInterval
-	prevNonce := int64(0)
+	sentNonce := int64(0)
 
 	heartbeatIntervalTicker := time.NewTicker(time.Duration(interval) * time.Millisecond)
 	defer heartbeatIntervalTicker.Stop()
@@ -227,16 +227,16 @@ func (client *client) connection() {
 		if err != nil {
 			log.Println(client.guildID, err)
 		}
-		prevNonce = randNum.Int64()
+		sentNonce = randNum.Int64()
 
-		err = client.connWriteJSON(discord_models.NewVoiceHeartbeat(prevNonce))
+		err = client.connWriteJSON(discord_models.NewVoiceHeartbeat(sentNonce))
 		if err != nil {
 			log.Println(client.guildID, err)
 		}
 
 		select {
 		case hbNonce := <-heartbeatAcked:
-			if prevNonce != hbNonce {
+			if sentNonce != hbNonce {
 				// handle nonce error
 				log.Println(client.guildID, "Nonce invalid")
 				client.connectionRestart(false)

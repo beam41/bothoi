@@ -154,7 +154,7 @@ func (client *client) sendSong(encodeSession *dca.EncodeSession) bool {
 	}
 	client.udpReadyWait.L.Unlock()
 
-	frameTime := uint32(config.DcaFramerate * config.DcaFrameduration / 1000)
+	const frameTime = uint32(config.DcaFramerate * config.DcaFrameduration / 1000)
 	ticker := time.NewTicker(time.Millisecond * time.Duration(config.DcaFrameduration))
 
 	client.RLock()
@@ -166,13 +166,13 @@ func (client *client) sendSong(encodeSession *dca.EncodeSession) bool {
 	}
 	client.RUnlock()
 
-	randNum, err := rand.Int(rand.Reader, big.NewInt(math.MaxInt64))
+	randNum, err := rand.Int(rand.Reader, big.NewInt(math.MaxUint16))
 	if err != nil {
 		log.Println(client.guildID, err)
 	}
 	sequenceNumber := uint16(randNum.Uint64())
 
-	randNum, err = rand.Int(rand.Reader, big.NewInt(math.MaxInt64))
+	randNum, err = rand.Int(rand.Reader, big.NewInt(math.MaxUint32))
 	if err != nil {
 		log.Println(client.guildID, err)
 	}

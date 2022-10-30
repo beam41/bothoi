@@ -19,9 +19,9 @@ type User struct {
 	PremiumType   uint8
 	PublicFlags   uint32
 
-	Guild       []Guild       `gorm:"foreignKey:OwnerID"`
-	GuildMember []GuildMember `gorm:"foreignKey:UserID"`
-	Channel     []Channel     `gorm:"foreignKey:OwnerID"`
-	VoiceStates []VoiceState  `gorm:"foreignKey:UserID"`
-	Song        []Song        `gorm:"foreignKey:RequesterID"`
+	OwnedGuild    []Guild       `gorm:"foreignKey:OwnerID"`
+	GuildMember   []GuildMember `gorm:"foreignKey:UserID"`
+	OwnedChannel  []Channel     `gorm:"foreignKey:OwnerID"`
+	VoiceStates   []VoiceState  `gorm:"foreignKey:UserID"`
+	RequestedSong []Song        `gorm:"foreignKey:RequesterID"`
 }
