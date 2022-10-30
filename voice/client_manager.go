@@ -24,7 +24,7 @@ func NewClientManager(gatewayClient *gateway.Client) *ClientManager {
 }
 
 // ClientStart start the client if not started already
-func (clm *ClientManager) ClientStart(guildID, channelID types.Snowflake) bool {
+func (clm *ClientManager) ClientStart(guildID, channelID types.Snowflake) error {
 	clm.RLock()
 	var cli = clm.list[guildID]
 	if cli != nil {
@@ -34,7 +34,7 @@ func (clm *ClientManager) ClientStart(guildID, channelID types.Snowflake) bool {
 		if cli.running {
 			go cli.play()
 		}
-		return false
+		return nil
 	}
 	clm.RUnlock()
 
@@ -56,7 +56,7 @@ func (clm *ClientManager) ClientStart(guildID, channelID types.Snowflake) bool {
 	err := clm.gatewayClient.VoiceChannelJoin(guildID, channelID, sessionIDChan, voiceServerChan)
 	if err != nil {
 		log.Println(guildID, err)
-		return false
+		return err
 	}
 
 	// wait for session id and voice server
@@ -70,17 +70,17 @@ func (clm *ClientManager) ClientStart(guildID, channelID types.Snowflake) bool {
 		go clm.list[guildID].connect()
 		go clm.list[guildID].play()
 	}()
-	return true
+	return nil
 }
 
 // ClientStop remove client from list and properly leave
-func (clm *ClientManager) ClientStop(guildID types.Snowflake) (bool, error) {
+func (clm *ClientManager) ClientStop(guildID types.Snowflake) error {
 	_ = repo.DeleteSongsInGuild(guildID)
 	clm.Lock()
 	defer clm.Unlock()
 	var cli = clm.list[guildID]
 	if cli == nil {
-		return false, nil
+		return nil
 	}
 	cli.Lock()
 	defer cli.Unlock()
@@ -91,7 +91,7 @@ func (clm *ClientManager) ClientStop(guildID types.Snowflake) (bool, error) {
 	cli.connCloseNormal()
 	delete(clm.list, guildID)
 	err := clm.gatewayClient.VoiceChannelLeave(guildID)
-	return true, err
+	return err
 }
 
 // ClientPauseSong pause/resume the music player return true if the player is paused

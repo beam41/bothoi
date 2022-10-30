@@ -6,6 +6,7 @@ import (
 	"bothoi/references/embed_color"
 	"bothoi/repo"
 	"bothoi/util"
+	"log"
 	"strconv"
 )
 
@@ -20,8 +21,9 @@ func (client *Manager) executeStop(data *discord_models.Interaction) {
 		return
 	}
 
-	success, _ := client.voiceClientManager.ClientStop(data.GuildID)
-	if !success {
+	err := client.voiceClientManager.ClientStop(data.GuildID)
+	if err != nil {
+		log.Println(err)
 		response = util.BuildPlayerResponse(
 			"Stopped",
 			"Cannot be stopped",

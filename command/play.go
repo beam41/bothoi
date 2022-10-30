@@ -68,8 +68,9 @@ func (client *Manager) executePlay(data *discord_models.Interaction) {
 		}
 	}
 
-	success := client.voiceClientManager.ClientStart(data.GuildID, *userVoiceChannel)
-	if !success {
+	err := client.voiceClientManager.ClientStart(data.GuildID, *userVoiceChannel)
+	if err != nil {
+		log.Println(err)
 		response = util.BuildPlayerResponseData(
 			"Play Error",
 			"Can't start player",
