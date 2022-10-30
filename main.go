@@ -11,8 +11,8 @@ import (
 func main() {
 	log.Println("Bot start")
 	repo.StartDb()
-	voiceClientManager := voice.NewClientManager()
-	gatewayClient := gateway.NewClient(voiceClientManager)
-	command.NewCommandManager(gatewayClient)
+	gatewayClient := gateway.NewClient()
+	voiceClientManager := voice.NewClientManager(gatewayClient)
+	command.NewCommandManager(gatewayClient, voiceClientManager)
 	gatewayClient.Connect()
 }

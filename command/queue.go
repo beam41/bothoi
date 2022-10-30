@@ -1,7 +1,6 @@
 package command
 
 import (
-	"bothoi/gateway"
 	"bothoi/models/discord_models"
 	"bothoi/references/embed_color"
 	"bothoi/repo"
@@ -11,9 +10,7 @@ import (
 	"strings"
 )
 
-const commandQueue = "queue"
-
-func executeQueue(_ *gateway.Client, data *discord_models.Interaction) {
+func (client *Manager) executeQueue(data *discord_models.Interaction) {
 	postLoading(data.ID, data.Token, "Queue")
 
 	options := util.SliceToMap(data.Data.Options, func(i int, item discord_models.InteractionOption) string { return item.Name })

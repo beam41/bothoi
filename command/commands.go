@@ -8,6 +8,7 @@ import (
 	"bothoi/references/embed_color"
 	"bothoi/util"
 	"bothoi/util/http_util"
+	"bothoi/voice"
 	"fmt"
 	"log"
 	"strconv"
@@ -15,23 +16,26 @@ import (
 )
 
 type Manager struct {
-	gatewayClient *gateway.Client
+	gatewayClient      *gateway.Client
+	voiceClientManager *voice.ClientManager
 }
 
-func NewCommandManager(gatewayClient *gateway.Client) *Manager {
+func NewCommandManager(gatewayClient *gateway.Client, voiceClientManager *voice.ClientManager) *Manager {
+	manager := &Manager{
+		gatewayClient:      gatewayClient,
+		voiceClientManager: voiceClientManager,
+	}
 	gatewayClient.SetInteractionExecutorList(
-		map[string]func(*gateway.Client, *discord_models.Interaction){
-			commandPlay:   executePlay,
-			commandQueue:  executeQueue,
-			commandPause0: executePause,
-			commandPause1: executePause,
-			commandStop:   executeStop,
-			commandSkip:   executeSkip,
+		map[string]func(*discord_models.Interaction){
+			"play":   manager.executePlay,
+			"queue":  manager.executeQueue,
+			"pause":  manager.executePause,
+			"resume": manager.executePause,
+			"stop":   manager.executeStop,
+			"skip":   manager.executeSkip,
 		},
 	)
-	return &Manager{
-		gatewayClient: gatewayClient,
-	}
+	return manager
 }
 
 func checkNotSameChannelError[InteractionResponse discord_models.InteractionResponse | discord_models.InteractionCallbackData](

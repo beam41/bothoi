@@ -2,7 +2,6 @@ package command
 
 import (
 	"bothoi/config"
-	"bothoi/gateway"
 	"bothoi/models/discord_models"
 	"bothoi/references/embed_color"
 	"bothoi/repo"
@@ -12,9 +11,7 @@ import (
 	"log"
 )
 
-const commandPlay = "play"
-
-func executePlay(gatewayClient *gateway.Client, data *discord_models.Interaction) {
+func (client *Manager) executePlay(data *discord_models.Interaction) {
 	postLoading(data.ID, data.Token, "Play")
 
 	options := util.SliceToMap(data.Data.Options, func(i int, item discord_models.InteractionOption) string { return item.Name })
@@ -71,9 +68,8 @@ func executePlay(gatewayClient *gateway.Client, data *discord_models.Interaction
 		}
 	}
 
-	err := gatewayClient.VoiceClientStart(data.GuildID, *userVoiceChannel)
-	if err != nil {
-		log.Println(err)
+	success := client.voiceClientManager.ClientStart(data.GuildID, *userVoiceChannel)
+	if !success {
 		response = util.BuildPlayerResponseData(
 			"Play Error",
 			"Can't start player",

@@ -2,7 +2,6 @@ package command
 
 import (
 	"bothoi/config"
-	"bothoi/gateway"
 	"bothoi/models/discord_models"
 	"bothoi/references/embed_color"
 	"bothoi/repo"
@@ -10,9 +9,7 @@ import (
 	"strconv"
 )
 
-const commandStop = "stop"
-
-func executeStop(gatewayClient *gateway.Client, data *discord_models.Interaction) {
+func (client *Manager) executeStop(data *discord_models.Interaction) {
 	var response discord_models.InteractionResponse
 	defer func() { postResponse(data.ID, data.Token, response) }()
 
@@ -23,7 +20,7 @@ func executeStop(gatewayClient *gateway.Client, data *discord_models.Interaction
 		return
 	}
 
-	success, _ := gatewayClient.VoiceClientStop(data.GuildID)
+	success, _ := client.voiceClientManager.ClientStop(data.GuildID)
 	if !success {
 		response = util.BuildPlayerResponse(
 			"Stopped",

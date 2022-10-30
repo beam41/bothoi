@@ -5,7 +5,6 @@ import (
 	"bothoi/models/discord_models"
 	"bothoi/models/types"
 	"bothoi/references/gateway_opcode"
-	"bothoi/voice"
 	"context"
 	"encoding/json"
 	"github.com/gorilla/websocket"
@@ -21,11 +20,10 @@ type voiceInstantiateChan struct {
 }
 
 type Client struct {
-	voiceClientManager *voice.ClientManager
-	conn               *websocket.Conn
-	ctx                context.Context
-	ctxCancel          context.CancelFunc
-	info               struct {
+	conn      *websocket.Conn
+	ctx       context.Context
+	ctxCancel context.CancelFunc
+	info      struct {
 		sync.RWMutex
 		sequenceNumber *uint64
 		session        *discord_models.ReadyEvent
@@ -35,12 +33,11 @@ type Client struct {
 		list map[types.Snowflake]voiceInstantiateChan
 	}
 	resume                  bool
-	interactionExecutorList map[string]func(*Client, *discord_models.Interaction)
+	interactionExecutorList map[string]func(*discord_models.Interaction)
 }
 
-func NewClient(voiceClientManager *voice.ClientManager) *Client {
+func NewClient() *Client {
 	return &Client{
-		voiceClientManager: voiceClientManager,
 		voiceInstantiateList: struct {
 			sync.RWMutex
 			list map[types.Snowflake]voiceInstantiateChan

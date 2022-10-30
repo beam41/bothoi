@@ -2,7 +2,6 @@ package command
 
 import (
 	"bothoi/config"
-	"bothoi/gateway"
 	"bothoi/models/discord_models"
 	"bothoi/references/embed_color"
 	"bothoi/repo"
@@ -10,9 +9,7 @@ import (
 	"fmt"
 )
 
-const commandSkip = "skip"
-
-func executeSkip(gatewayClient *gateway.Client, data *discord_models.Interaction) {
+func (client *Manager) executeSkip(data *discord_models.Interaction) {
 	var response discord_models.InteractionResponse
 	defer func() { postResponse(data.ID, data.Token, response) }()
 
@@ -23,7 +20,7 @@ func executeSkip(gatewayClient *gateway.Client, data *discord_models.Interaction
 		return
 	}
 
-	success := gatewayClient.VoiceClientSkipSong(data.GuildID)
+	success := client.voiceClientManager.ClientSkipSong(data.GuildID)
 	if !success {
 		response = util.BuildPlayerResponse(
 			"Skip Error",

@@ -8,13 +8,13 @@ import (
 	"log"
 )
 
-func (client *Client) SetInteractionExecutorList(executorList map[string]func(*Client, *discord_models.Interaction)) {
+func (client *Client) SetInteractionExecutorList(executorList map[string]func(*discord_models.Interaction)) {
 	client.interactionExecutorList = executorList
 }
 
-func (client *Client) interactionExecute(gatewayClient *Client, data *discord_models.Interaction) {
+func (client *Client) interactionExecute(data *discord_models.Interaction) {
 	if interaction, ok := client.interactionExecutorList[data.Data.Name]; ok {
-		interaction(gatewayClient, data)
+		interaction(data)
 	}
 }
 
@@ -37,7 +37,7 @@ func (client *Client) dispatchHandler(payload discord_models.GatewayPayload) {
 			log.Println(err)
 			return
 		}
-		client.interactionExecute(client, &data)
+		client.interactionExecute(&data)
 	case "GUILD_CREATE":
 		var data discord_models.GuildCreate
 		err := mapstructure.WeakDecode(payload.D, &data)

@@ -376,7 +376,7 @@ func (client *client) waitForExit() {
 		if client.running {
 			client.RUnlock()
 			log.Println(client.guildID, "Idle Timeout")
-			success := client.clm.ClientStop(client.guildID)
+			success, _ := client.clm.ClientStop(client.guildID)
 			if !success {
 				log.Println(client.guildID, "Cannot stop")
 			}

@@ -2,7 +2,6 @@ package command
 
 import (
 	"bothoi/config"
-	"bothoi/gateway"
 	"bothoi/models/discord_models"
 	"bothoi/references/embed_color"
 	"bothoi/repo"
@@ -10,10 +9,7 @@ import (
 	"strconv"
 )
 
-const commandPause0 = "pause"
-const commandPause1 = "resume"
-
-func executePause(gatewayClient *gateway.Client, data *discord_models.Interaction) {
+func (client *Manager) executePause(data *discord_models.Interaction) {
 	var response discord_models.InteractionResponse
 	defer func() { postResponse(data.ID, data.Token, response) }()
 
@@ -24,7 +20,7 @@ func executePause(gatewayClient *gateway.Client, data *discord_models.Interactio
 		return
 	}
 
-	found, pausing := gatewayClient.VoiceClientPauseSong(data.GuildID)
+	found, pausing := client.voiceClientManager.ClientPauseSong(data.GuildID)
 	if !found {
 		response = util.BuildPlayerResponse(
 			"Pause Error",

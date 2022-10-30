@@ -1,6 +1,7 @@
 package voice
 
 import (
+	"bothoi/gateway"
 	"bothoi/models/discord_models"
 	"bothoi/models/types"
 	"bothoi/repo"
@@ -11,17 +12,19 @@ import (
 
 type ClientManager struct {
 	sync.RWMutex
-	list map[types.Snowflake]*client
+	gatewayClient *gateway.Client
+	list          map[types.Snowflake]*client
 }
 
-func NewClientManager() *ClientManager {
+func NewClientManager(gatewayClient *gateway.Client) *ClientManager {
 	return &ClientManager{
-		list: make(map[types.Snowflake]*client),
+		gatewayClient: gatewayClient,
+		list:          make(map[types.Snowflake]*client),
 	}
 }
 
 // ClientStart start the client if not started already
-func (clm *ClientManager) ClientStart(guildID types.Snowflake) (bool, chan<- string, chan<- *discord_models.VoiceServer) {
+func (clm *ClientManager) ClientStart(guildID, channelID types.Snowflake) bool {
 	clm.RLock()
 	var cli = clm.list[guildID]
 	if cli != nil {
@@ -31,7 +34,7 @@ func (clm *ClientManager) ClientStart(guildID types.Snowflake) (bool, chan<- str
 		if cli.running {
 			go cli.play()
 		}
-		return false, nil, nil
+		return false
 	}
 	clm.RUnlock()
 
@@ -50,10 +53,16 @@ func (clm *ClientManager) ClientStart(guildID types.Snowflake) (bool, chan<- str
 	}
 	sessionIDChan := make(chan string)
 	voiceServerChan := make(chan *discord_models.VoiceServer)
+	err := clm.gatewayClient.VoiceChannelJoin(guildID, channelID, sessionIDChan, voiceServerChan)
+	if err != nil {
+		log.Println(guildID, err)
+		return false
+	}
 
 	// wait for session id and voice server
 	go func() {
 		sessionID, voiceServer := <-sessionIDChan, <-voiceServerChan
+		clm.gatewayClient.CleanVoiceInstantiateChan(guildID)
 		clm.list[guildID].Lock()
 		defer clm.list[guildID].Unlock()
 		clm.list[guildID].sessionID = &sessionID
@@ -61,17 +70,17 @@ func (clm *ClientManager) ClientStart(guildID types.Snowflake) (bool, chan<- str
 		go clm.list[guildID].connect()
 		go clm.list[guildID].play()
 	}()
-	return true, sessionIDChan, voiceServerChan
+	return true
 }
 
 // ClientStop remove client from list and properly leave
-func (clm *ClientManager) ClientStop(guildID types.Snowflake) bool {
+func (clm *ClientManager) ClientStop(guildID types.Snowflake) (bool, error) {
 	_ = repo.DeleteSongsInGuild(guildID)
 	clm.Lock()
 	defer clm.Unlock()
 	var cli = clm.list[guildID]
 	if cli == nil {
-		return false
+		return false, nil
 	}
 	cli.Lock()
 	defer cli.Unlock()
@@ -81,7 +90,8 @@ func (clm *ClientManager) ClientStop(guildID types.Snowflake) bool {
 	cli.ctxCancel()
 	cli.connCloseNormal()
 	delete(clm.list, guildID)
-	return true
+	err := clm.gatewayClient.VoiceChannelLeave(guildID)
+	return true, err
 }
 
 // ClientPauseSong pause/resume the music player return true if the player is paused
