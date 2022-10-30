@@ -77,6 +77,7 @@ func (client *client) connectionRestart(resume bool) {
 	client.udpReadyWait.Signal()
 	client.udpReadyWait.L.Unlock()
 	client.resume = resume
+	client.speaking = false
 	client.Unlock()
 	client.vcCtxCancel()
 	err := client.c.WriteMessage(
