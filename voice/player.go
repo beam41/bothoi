@@ -38,7 +38,7 @@ func postPlaying(channelID, requesterID types.Snowflake, title, ytID string, dur
 	postMsg(channelID, util.BuildPlayerResponseData(
 		"Currently Playing",
 		fmt.Sprintf(
-			"Playing [%s](https://youtu.be/%s) | `%s`\nrequested by <@%d>",
+			"Playing [%s](https://youtu.be/%s) | `%s`\nRequested by <@%d>",
 			title,
 			ytID,
 			util.ConvertSecondsToVidLength(duration),
@@ -46,6 +46,19 @@ func postPlaying(channelID, requesterID types.Snowflake, title, ytID string, dur
 		),
 		"",
 		embed_color.SuccessContinue,
+	))
+}
+
+func postCannotPlay(channelID types.Snowflake, title, ytID string) {
+	postMsg(channelID, util.BuildPlayerResponseData(
+		"Skipped",
+		fmt.Sprintf(
+			"Cannot play [%s](https://youtu.be/%s)",
+			title,
+			ytID,
+		),
+		"",
+		embed_color.ErrorIgnored,
 	))
 }
 
@@ -93,6 +106,7 @@ func (client *client) play() {
 			return
 		} else if err != nil {
 			log.Println(client.guildID, err)
+			postCannotPlay(currentSong.RequestChannelID, currentSong.Title, currentSong.YtID)
 			continue
 		} else if currentSong.Playing {
 			_ = repo.DeleteSong(currentSong.ID)
@@ -102,6 +116,7 @@ func (client *client) play() {
 		url, err := yt_util.GetYoutubeDownloadUrl(currentSong.YtID)
 		if err != nil {
 			log.Println(client.guildID, err)
+			postCannotPlay(currentSong.RequestChannelID, currentSong.Title, currentSong.YtID)
 			continue
 		}
 

@@ -26,7 +26,7 @@ func (client *Manager) executePlay(data *discord_models.Interaction) {
 		return
 	}
 
-	result, _ := yt_util.SearchYt(options["song"].Value.(string))
+	result, playlistInfo, _ := yt_util.SearchYt(options["song"].Value.(string))
 	if len(result) == 0 {
 		response = util.BuildPlayerResponseData(
 			"Play Error",
@@ -43,7 +43,7 @@ func (client *Manager) executePlay(data *discord_models.Interaction) {
 			seek = util.ConvertVidLengthToSeconds(s.Value.(string))
 		}
 		queueSize := repo.GetQueueSize(data.GuildID)
-		err := repo.AddSongToQueue(data.GuildID, data.Member.User.ID, data.ChannelID, result[0].YtID, result[0].Title, result[0].Duration, seek, queueSize != 0)
+		err := repo.AddSongToQueue(data.GuildID, data.Member.User.ID, data.ChannelID, result[0].ID, result[0].Title, uint32(result[0].Duration), seek, queueSize != 0)
 		if err != nil {
 			log.Println(err)
 			response = util.BuildPlayerResponseData(
@@ -85,9 +85,11 @@ func (client *Manager) executePlay(data *discord_models.Interaction) {
 		response = util.BuildPlayerResponseData(
 			"Play a song",
 			fmt.Sprintf(
-				"Added %d song%s requested by <@%d>",
+				"Added %d song%s from [%s](%s)\nRequested by <@%d>",
 				len(result),
 				util.Ternary(len(result) > 1, "s", ""),
+				playlistInfo.Title,
+				playlistInfo.WebpageURL,
 				data.Member.User.ID,
 			),
 			fmt.Sprintf("%d song%s in queue", queueSize, util.Ternary(queueSize > 1, "s", "")),
@@ -97,10 +99,10 @@ func (client *Manager) executePlay(data *discord_models.Interaction) {
 		response = util.BuildPlayerResponseData(
 			"Play a song",
 			fmt.Sprintf(
-				"Playing [%s](https://youtu.be/%s) | `%s`\nrequested by <@%d>",
+				"Playing [%s](https://youtu.be/%s) | `%s`\nRequested by <@%d>",
 				result[0].Title,
-				result[0].YtID,
-				util.ConvertSecondsToVidLength(result[0].Duration),
+				result[0].ID,
+				util.ConvertSecondsToVidLength(uint32(result[0].Duration)),
 				data.Member.User.ID,
 			),
 			"Playing",
@@ -110,10 +112,10 @@ func (client *Manager) executePlay(data *discord_models.Interaction) {
 		response = util.BuildPlayerResponseData(
 			"Play a song",
 			fmt.Sprintf(
-				"Added [%s](https://youtu.be/%s) | `%s`\nrequested by <@%d>",
+				"Added [%s](https://youtu.be/%s) | `%s`\nRequested by <@%d>",
 				result[0].Title,
-				result[0].YtID,
-				util.ConvertSecondsToVidLength(result[0].Duration),
+				result[0].ID,
+				util.ConvertSecondsToVidLength(uint32(result[0].Duration)),
 				data.Member.User.ID,
 			),
 			fmt.Sprintf("#%d in queue", queueSize),

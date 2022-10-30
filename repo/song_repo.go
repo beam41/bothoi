@@ -22,7 +22,7 @@ func AddSongToQueue(guildID, requesterID, requestChannelID types.Snowflake, ytID
 	return result.Error
 }
 
-func AddSongToQueueMultiple(guildID, requesterID, requestChannelID types.Snowflake, ytResult []yt_util.SearchResult) error {
+func AddSongToQueueMultiple(guildID, requesterID, requestChannelID types.Snowflake, ytResult []yt_util.Video) error {
 	songs := make([]db_models.Song, len(ytResult))
 	for i, result := range ytResult {
 		songs[i] = db_models.Song{
@@ -30,9 +30,9 @@ func AddSongToQueueMultiple(guildID, requesterID, requestChannelID types.Snowfla
 			RequesterID:      requesterID,
 			RequestChannelID: requestChannelID,
 			RequestedAt:      time.Now(),
-			YtID:             result.YtID,
+			YtID:             result.ID,
 			Title:            result.Title,
-			Duration:         result.Duration,
+			Duration:         uint32(result.Duration),
 			PostMsgPlaying:   true,
 		}
 	}
