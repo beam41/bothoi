@@ -201,6 +201,10 @@ func (client *client) connection() {
 					continue
 				}
 				client.sessionDescription = &data
+				client.udpReadyWait.L.Lock()
+				client.udpReady = true
+				client.udpReadyWait.Signal()
+				client.udpReadyWait.L.Unlock()
 			case voice_opcode.Resumed:
 				log.Println(client.guildID, "Resumed")
 				client.udpConnect()
@@ -272,10 +276,6 @@ func (client *client) udpConnect() {
 	if err != nil {
 		log.Println(client.guildID, err)
 	}
-	client.udpReadyWait.L.Lock()
-	client.udpReady = true
-	client.udpReadyWait.Signal()
-	client.udpReadyWait.L.Unlock()
 
 	go client.udpKeepAlive(time.Second * 5)
 }

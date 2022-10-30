@@ -82,7 +82,7 @@ func NewVoiceIdentify(guildID, userID types.Snowflake, sessionID, token string) 
 
 func NewVoiceResume(guildID types.Snowflake, sessionID, token string) VoiceGatewayPayload {
 	return VoiceGatewayPayload{
-		Op: 7,
+		Op: voice_opcode.Resume,
 		D: map[string]any{
 			"server_id":  guildID,
 			"session_id": sessionID,
