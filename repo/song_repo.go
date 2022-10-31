@@ -3,7 +3,7 @@ package repo
 import (
 	"bothoi/models/db_models"
 	"bothoi/models/types"
-	"bothoi/util/yt_util.go"
+	"bothoi/util/player_util.go"
 	"time"
 )
 
@@ -22,7 +22,7 @@ func AddSongToQueue(guildID, requesterID, requestChannelID types.Snowflake, ytID
 	return result.Error
 }
 
-func AddSongToQueueMultiple(guildID, requesterID, requestChannelID types.Snowflake, ytResult []yt_util.Video) error {
+func AddSongToQueueMultiple(guildID, requesterID, requestChannelID types.Snowflake, ytResult []player_util.Video) error {
 	songs := make([]db_models.Song, len(ytResult))
 	for i, result := range ytResult {
 		songs[i] = db_models.Song{

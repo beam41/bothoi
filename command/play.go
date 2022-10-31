@@ -6,7 +6,7 @@ import (
 	"bothoi/references/embed_color"
 	"bothoi/repo"
 	"bothoi/util"
-	"bothoi/util/yt_util.go"
+	"bothoi/util/player_util.go"
 	"fmt"
 	"log"
 )
@@ -25,8 +25,18 @@ func (client *Manager) executePlay(data *discord_models.Interaction) {
 		response = res
 		return
 	}
-
-	result, playlistInfo, _ := yt_util.SearchYt(options["song"].Value.(string))
+	inputSong := options["song"].Value.(string)
+	var result []player_util.Video
+	var playlistInfo *player_util.PlaylistInfo
+	var _ /*spotifyName*/ string
+	var _ /*spotifyLink*/ string
+	if player_util.IsSpotifyUrl(inputSong) {
+		var searchStr []string
+		searchStr, _, _, _ = player_util.ExtractSpotifyUrl(inputSong)
+		result = player_util.SearchYtMany(searchStr)
+	} else {
+		result, playlistInfo, _ = player_util.SearchYt(inputSong)
+	}
 	if len(result) == 0 {
 		response = util.BuildPlayerResponseData(
 			"Play Error",
@@ -36,7 +46,6 @@ func (client *Manager) executePlay(data *discord_models.Interaction) {
 		)
 		return
 	}
-
 	if len(result) == 1 {
 		seek := uint32(0)
 		if s, ok := options["seek"]; ok {

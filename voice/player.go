@@ -8,7 +8,7 @@ import (
 	"bothoi/repo"
 	"bothoi/util"
 	"bothoi/util/http_util"
-	"bothoi/util/yt_util.go"
+	"bothoi/util/player_util.go"
 	"crypto/rand"
 	"encoding/binary"
 	"fmt"
@@ -113,7 +113,7 @@ func (client *client) play() {
 			continue
 		}
 		log.Println(client.guildID, "Playing song: ", currentSong.Title)
-		url, err := yt_util.GetYoutubeDownloadUrl(currentSong.YtID)
+		url, err := player_util.GetYoutubeDownloadUrl(currentSong.YtID)
 		if err != nil {
 			log.Println(client.guildID, err)
 			postCannotPlay(currentSong.RequestChannelID, currentSong.Title, currentSong.YtID)

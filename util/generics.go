@@ -25,3 +25,11 @@ func SliceToMap[K comparable, T any](slice []T, keySelector func(int, T) K) map[
 	}
 	return mapped
 }
+
+func Map[TSlice any, TResult any](slice []TSlice, selector func(int, TSlice) TResult) []TResult {
+	mapped := make([]TResult, len(slice))
+	for i, item := range slice {
+		mapped[i] = selector(i, item)
+	}
+	return mapped
+}

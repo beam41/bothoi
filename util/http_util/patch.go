@@ -23,8 +23,8 @@ func PatchJsonH(url string, body any, header map[string]string) ([]byte, error) 
 	return Patch(url, payload, header)
 }
 
-func Patch(url string, body *bytes.Buffer, header map[string]string) ([]byte, error) {
-	req, err := http.NewRequest("PATCH", url, body)
+func Patch(url string, body io.Reader, header map[string]string) ([]byte, error) {
+	req, err := http.NewRequest(http.MethodPatch, url, body)
 	if err != nil {
 		return nil, err
 	}

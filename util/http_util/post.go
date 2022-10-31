@@ -25,8 +25,8 @@ func PostJsonH(url string, body any, header map[string]string) ([]byte, error) {
 	return Post(url, payload, header)
 }
 
-func Post(url string, body *bytes.Buffer, header map[string]string) ([]byte, error) {
-	req, err := http.NewRequest("POST", url, body)
+func Post(url string, body io.Reader, header map[string]string) ([]byte, error) {
+	req, err := http.NewRequest(http.MethodPost, url, body)
 	if err != nil {
 		return nil, err
 	}
