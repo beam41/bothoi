@@ -58,3 +58,25 @@ func Test_Ternary_ReturnSecondArgumentWhenFalse(t *testing.T) {
 		t.Logf("expected: %v, got: %v", expected, result)
 	}
 }
+
+func Test_Contains_ReturnTrueWhenFoundInSlice(t *testing.T) {
+	result := Contains([]string{"apple", "bee", "cat"}, "bee")
+	expected := true
+
+	if result != expected {
+		t.Errorf("expected: %v, got: %v", expected, result)
+	} else {
+		t.Logf("expected: %v, got: %v", expected, result)
+	}
+}
+
+func Test_Contains_ReturnFalseWhenNotFoundInSlice(t *testing.T) {
+	result := Contains([]string{"apple", "bee", "cat"}, "dog")
+	expected := false
+
+	if result != expected {
+		t.Errorf("expected: %v, got: %v", expected, result)
+	} else {
+		t.Logf("expected: %v, got: %v", expected, result)
+	}
+}

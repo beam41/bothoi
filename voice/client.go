@@ -187,7 +187,7 @@ func (client *client) connection() {
 					log.Println(client.guildID, err)
 					continue
 				}
-				if !util.ContainsStr(data.Modes, config.PreferredMode) {
+				if !util.Contains(data.Modes, config.PreferredMode) {
 					log.Panicln(client.guildID, "Preferred mode not available")
 				}
 				client.udpInfo = &data
