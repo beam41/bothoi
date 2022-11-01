@@ -21,7 +21,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jonas747/dca/v2"
+	"github.com/beam41/dca"
 )
 
 func postMsg(channelID types.Snowflake, data discord_models.InteractionCallbackData) {
