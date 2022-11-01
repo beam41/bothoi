@@ -176,10 +176,10 @@ func (client *client) connection() {
 				}
 				client.RUnlock()
 				log.Println(client.guildID, "read err", err)
-				if websocket.IsUnexpectedCloseError(err, 4015) {
-					client.connectionRestart(false)
-				} else {
+				if websocket.IsCloseError(err, 4015) {
 					client.connectionRestart(true)
+				} else {
+					client.connectionRestart(false)
 				}
 				return
 			}

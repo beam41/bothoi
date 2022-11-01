@@ -125,13 +125,12 @@ func (client *Client) connection() {
 			err := client.gatewayConnReadJSON(&payload)
 			if err != nil {
 				log.Println(err)
-				if websocket.IsUnexpectedCloseError(err, 1001, 4004, 4010, 4011, 4012, 4013, 4014) {
-					client.ctxCancel()
-					return
-				} else {
+				if websocket.IsCloseError(err, 1001, 4004, 4010, 4011, 4012, 4013, 4014) {
 					client.gatewayConnCloseRestart()
-					return
+				} else {
+					client.ctxCancel()
 				}
+				return
 			}
 			if config.Development {
 				jsonDat, _ := json.Marshal(payload)
