@@ -92,8 +92,9 @@ func (client *client) connectionRestart(resume bool) {
 		sessionIDChan := make(chan string)
 		voiceServerChan := make(chan *discord_models.VoiceServer)
 		err := client.clm.gatewayClient.VoiceChannelJoin(client.guildID, client.channelID, sessionIDChan, voiceServerChan)
+		log.Println(client.guildID, "joined")
 		if err != nil {
-			log.Panicln(client.guildID, err)
+			log.Println(client.guildID, err)
 		}
 		sessionID := <-sessionIDChan
 		voiceServer := <-voiceServerChan
