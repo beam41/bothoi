@@ -62,7 +62,8 @@ func (clm *ClientManager) ClientStart(guildID, channelID types.Snowflake) error 
 
 	// wait for session id and voice server
 	go func() {
-		sessionID, voiceServer := <-sessionIDChan, <-voiceServerChan
+		sessionID := <-sessionIDChan
+		voiceServer := <-voiceServerChan
 		clm.gatewayClient.CleanVoiceInstantiateChan(guildID)
 		clm.list[guildID].Lock()
 		defer clm.list[guildID].Unlock()

@@ -95,7 +95,8 @@ func (client *client) connectionRestart(resume bool) {
 		if err != nil {
 			log.Panicln(client.guildID, err)
 		}
-		sessionID, voiceServer := <-sessionIDChan, <-voiceServerChan
+		sessionID := <-sessionIDChan
+		voiceServer := <-voiceServerChan
 		client.clm.gatewayClient.CleanVoiceInstantiateChan(client.guildID)
 		log.Println(client.guildID, "new state", sessionID, voiceServer)
 		client.Lock()
