@@ -44,6 +44,7 @@ func (clm *ClientManager) ClientStart(guildID, channelID types.Snowflake) error 
 	ctx, cancel := context.WithCancel(context.Background())
 	clm.list[guildID] = &client{
 		guildID:         guildID,
+		channelID:       channelID,
 		udpReadyWait:    sync.NewCond(&sync.Mutex{}),
 		ctx:             ctx,
 		ctxCancel:       cancel,

@@ -28,6 +28,7 @@ type client struct {
 	ctx                context.Context
 	ctxCancel          context.CancelFunc
 	guildID            types.Snowflake
+	channelID          types.Snowflake
 	sessionID          *string
 	voiceServer        *discord_models.VoiceServer
 	c                  *websocket.Conn
@@ -86,6 +87,18 @@ func (client *client) connectionRestart(resume bool) {
 	)
 	if err != nil {
 		log.Println(client.guildID, err)
+	}
+	if !client.resume {
+		sessionIDChan := make(chan string)
+		voiceServerChan := make(chan *discord_models.VoiceServer)
+		err := client.clm.gatewayClient.VoiceChannelJoin(client.guildID, client.channelID, sessionIDChan, voiceServerChan)
+		if err != nil {
+			log.Panicln(client.guildID, err)
+		}
+		sessionID, voiceServer := <-sessionIDChan, <-voiceServerChan
+		client.clm.gatewayClient.CleanVoiceInstantiateChan(client.guildID)
+		client.sessionID = &sessionID
+		client.voiceServer = voiceServer
 	}
 }
 
