@@ -97,8 +97,10 @@ func (client *client) connectionRestart(resume bool) {
 		}
 		sessionID, voiceServer := <-sessionIDChan, <-voiceServerChan
 		client.clm.gatewayClient.CleanVoiceInstantiateChan(client.guildID)
+		client.Lock()
 		client.sessionID = &sessionID
 		client.voiceServer = voiceServer
+		client.Unlock()
 	}
 }
 
