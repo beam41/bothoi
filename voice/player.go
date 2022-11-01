@@ -80,6 +80,9 @@ func (client *client) play() {
 		return
 	}
 	client.playerRunning = true
+	defer func() {
+		client.playerRunning = false
+	}()
 	client.Unlock()
 
 	// encode settings
@@ -163,11 +166,13 @@ func (client *client) playTillComplete(url string, options *dca.EncodeOptions) {
 }
 
 func (client *client) sendSong(encodeSession *dca.EncodeSession) bool {
+	log.Println(client.guildID, "sendSong waiting")
 	client.udpReadyWait.L.Lock()
 	for !client.udpReady {
 		client.udpReadyWait.Wait()
 	}
 	client.udpReadyWait.L.Unlock()
+	log.Println(client.guildID, "sendSong start")
 
 	const frameTime = uint32(config.DcaFramerate * config.DcaFrameduration / 1000)
 	ticker := time.NewTicker(time.Millisecond * time.Duration(config.DcaFrameduration))

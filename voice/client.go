@@ -74,7 +74,7 @@ func (client *client) connectionRestart(resume bool) {
 	client.Lock()
 	client.udpReadyWait.L.Lock()
 	client.udpReady = false
-	client.udpReadyWait.Signal()
+	client.udpReadyWait.Broadcast()
 	client.udpReadyWait.L.Unlock()
 	client.resume = resume
 	client.speaking = false
@@ -205,6 +205,7 @@ func (client *client) connection() {
 				client.udpReady = true
 				client.udpReadyWait.Signal()
 				client.udpReadyWait.L.Unlock()
+				log.Println(client.guildID, "sessionDescription complete")
 			case voice_opcode.Resumed:
 				log.Println(client.guildID, "Resumed")
 				client.udpConnect()
