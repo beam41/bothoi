@@ -88,13 +88,25 @@ func (client *client) connectionRestart(resume bool) {
 	if err != nil {
 		log.Println(client.guildID, err)
 	}
-	if !client.resume {
-		sessionIDChan := make(chan string)
-		voiceServerChan := make(chan *discord_models.VoiceServer)
-		err := client.clm.gatewayClient.VoiceChannelJoin(client.guildID, client.channelID, sessionIDChan, voiceServerChan)
-		log.Println(client.guildID, "joined")
-		if err != nil {
-			log.Println(client.guildID, err)
+	if !resume {
+		var sessionIDChan chan string
+		var voiceServerChan chan *discord_models.VoiceServer
+		for {
+			sessionIDChan = make(chan string)
+			voiceServerChan = make(chan *discord_models.VoiceServer)
+			err := client.clm.gatewayClient.VoiceChannelJoin(client.guildID, client.channelID, sessionIDChan, voiceServerChan)
+			log.Println(client.guildID, "joined")
+			if err != nil {
+				client.clm.gatewayClient.CleanVoiceInstantiateChan(client.guildID)
+				log.Println(client.guildID, "cannot rejoin", err)
+				// retry by leaving first then rejoin
+				err := client.clm.gatewayClient.VoiceChannelLeave(client.guildID)
+				if err != nil {
+					log.Panicln(client.guildID, "cannot leave", err)
+				}
+			} else {
+				break
+			}
 		}
 		sessionID := <-sessionIDChan
 		voiceServer := <-voiceServerChan
