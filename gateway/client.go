@@ -44,6 +44,7 @@ func NewClient() *Client {
 			sync.RWMutex
 			list map[types.Snowflake]voiceInstantiateChan
 		}{list: make(map[types.Snowflake]voiceInstantiateChan)},
+		waitResume: make(chan struct{}, 1),
 	}
 }
 
@@ -75,7 +76,6 @@ func (client *Client) gatewayConnCloseRestart() {
 
 // connect to the discord gateway.
 func (client *Client) Connect() {
-	client.waitResume = make(chan struct{})
 	client.waitResume <- struct{}{}
 	for {
 		<-client.waitResume

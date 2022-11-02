@@ -121,7 +121,6 @@ func (client *client) connectionRestart(resume bool) {
 }
 
 func (client *client) connect() {
-	client.waitResume = make(chan struct{})
 	client.waitResume <- struct{}{}
 	for {
 		<-client.waitResume

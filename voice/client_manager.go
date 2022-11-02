@@ -65,6 +65,7 @@ func (clm *ClientManager) ClientStart(guildID, channelID types.Snowflake) error 
 		pauseWait:       sync.NewCond(&sync.Mutex{}),
 		stopWaitForExit: make(chan struct{}),
 		clm:             clm,
+		waitResume:      make(chan struct{}, 1),
 	}
 	sessionIDChan := make(chan string)
 	voiceServerChan := make(chan *discord_models.VoiceServer)
