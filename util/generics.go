@@ -34,3 +34,12 @@ func Contains[T comparable](s []T, e T) bool {
 	}
 	return false
 }
+
+func Find[T any](s []T, selector func(int, T) bool) *T {
+	for i, a := range s {
+		if selector(i, a) {
+			return &a
+		}
+	}
+	return nil
+}

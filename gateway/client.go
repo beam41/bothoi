@@ -34,6 +34,7 @@ type Client struct {
 	}
 	resume                  bool
 	interactionExecutorList map[string]func(*discord_models.Interaction)
+	newSessionIDHandler     func(types.Snowflake, string)
 }
 
 func NewClient() *Client {

@@ -17,10 +17,24 @@ type ClientManager struct {
 }
 
 func NewClientManager(gatewayClient *gateway.Client) *ClientManager {
-	return &ClientManager{
+	clm := &ClientManager{
 		gatewayClient: gatewayClient,
 		list:          make(map[types.Snowflake]*client),
 	}
+	gatewayClient.RegisterNewSessionIDHandler(clm.NewSessionIDHandler)
+	return clm
+}
+
+func (clm *ClientManager) NewSessionIDHandler(guildID types.Snowflake, sessionID string) {
+	clm.Lock()
+	defer clm.Unlock()
+	var cli = clm.list[guildID]
+	if cli == nil {
+		return
+	}
+	cli.Lock()
+	defer cli.Unlock()
+	cli.sessionID = &sessionID
 }
 
 // ClientStart start the client if not started already
