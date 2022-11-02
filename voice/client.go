@@ -51,6 +51,7 @@ type client struct {
 	vcCtx              context.Context
 	vcCtxCancel        context.CancelFunc
 	resume             bool
+	waitResume         chan struct{}
 }
 
 func (client *client) connWriteJSON(v any) (err error) {
@@ -72,6 +73,7 @@ func (client *client) connectionRestart(resume bool) {
 			log.Println(client.guildID, "voiceRestart panic occurred:", err)
 		}
 	}()
+	client.vcCtxCancel()
 	client.Lock()
 	client.udpReadyWait.L.Lock()
 	client.udpReady = false
@@ -80,7 +82,6 @@ func (client *client) connectionRestart(resume bool) {
 	client.resume = resume
 	client.speaking = false
 	client.Unlock()
-	client.vcCtxCancel()
 	err := client.c.WriteMessage(
 		websocket.CloseMessage,
 		websocket.FormatCloseMessage(util.Ternary(resume, 4006, websocket.CloseTryAgainLater), ""),
@@ -95,7 +96,6 @@ func (client *client) connectionRestart(resume bool) {
 			sessionIDChan = make(chan string)
 			voiceServerChan = make(chan *discord_models.VoiceServer)
 			err := client.clm.gatewayClient.VoiceChannelJoin(client.guildID, client.channelID, sessionIDChan, voiceServerChan)
-			log.Println(client.guildID, "joined")
 			if err != nil {
 				client.clm.gatewayClient.CleanVoiceInstantiateChan(client.guildID)
 				log.Println(client.guildID, "cannot rejoin", err)
@@ -117,10 +117,14 @@ func (client *client) connectionRestart(resume bool) {
 		client.voiceServer = voiceServer
 		client.Unlock()
 	}
+	client.waitResume <- struct{}{}
 }
 
 func (client *client) connect() {
+	client.waitResume = make(chan struct{})
+	client.waitResume <- struct{}{}
 	for {
+		<-client.waitResume
 		if client.destroyed {
 			return
 		}

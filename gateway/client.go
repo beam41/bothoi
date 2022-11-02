@@ -35,6 +35,7 @@ type Client struct {
 	resume                  bool
 	interactionExecutorList map[string]func(*discord_models.Interaction)
 	newSessionIDHandler     func(types.Snowflake, string)
+	waitResume              chan struct{}
 }
 
 func NewClient() *Client {
@@ -69,11 +70,15 @@ func (client *Client) gatewayConnCloseRestart() {
 		log.Println(err)
 	}
 	client.resume = true
+	client.waitResume <- struct{}{}
 }
 
 // connect to the discord gateway.
 func (client *Client) Connect() {
+	client.waitResume = make(chan struct{})
+	client.waitResume <- struct{}{}
 	for {
+		<-client.waitResume
 		ctx, cancel := context.WithCancel(context.Background())
 		client.ctx = ctx
 		client.ctxCancel = cancel
