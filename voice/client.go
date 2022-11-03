@@ -69,6 +69,8 @@ func (client *client) connCloseNormal() {
 	}
 }
 
+// reconnecting for voice is really just guessing work right now
+// discord docs is really stub on this topic
 func (client *client) connectionRestart(resume bool) {
 	defer func() {
 		if err := recover(); err != nil {
