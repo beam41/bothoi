@@ -135,6 +135,7 @@ func (client *Client) connection() {
 					client.gatewayConnCloseRestart()
 				} else {
 					client.ctxCancel()
+					client.waitResume <- struct{}{}
 				}
 				return
 			}
