@@ -50,6 +50,8 @@ type client struct {
 	clm                *ClientManager
 	vcCtx              context.Context
 	vcCtxCancel        context.CancelFunc
+	udpCtx             context.Context
+	udpCtxCancel       context.CancelFunc
 	resume             bool
 	waitResume         chan struct{}
 }
@@ -73,15 +75,22 @@ func (client *client) connectionRestart(resume bool) {
 			log.Println(client.guildID, "voiceRestart panic occurred:", err)
 		}
 	}()
+	client.pauseWait.L.Lock()
+	client.pausing = false
+	client.pauseWait.Broadcast()
+	client.pauseWait.L.Unlock()
 	client.vcCtxCancel()
 	client.Lock()
-	client.udpReadyWait.L.Lock()
-	client.udpReady = false
-	client.udpReadyWait.Broadcast()
-	client.udpReadyWait.L.Unlock()
 	client.resume = resume
 	client.speaking = false
 	client.Unlock()
+	if !resume {
+		client.udpCtxCancel()
+		client.udpReadyWait.L.Lock()
+		client.udpReady = false
+		client.udpReadyWait.Broadcast()
+		client.udpReadyWait.L.Unlock()
+	}
 	err := client.c.WriteMessage(
 		websocket.CloseMessage,
 		websocket.FormatCloseMessage(util.Ternary(resume, 4006, websocket.CloseTryAgainLater), ""),
@@ -130,6 +139,9 @@ func (client *client) connect() {
 		ctx, cancel := context.WithCancel(context.Background())
 		client.vcCtx = ctx
 		client.vcCtxCancel = cancel
+		ctxUdp, cancelUdp := context.WithCancel(context.Background())
+		client.udpCtx = ctxUdp
+		client.udpCtxCancel = cancelUdp
 		client.connection()
 	}
 }
@@ -241,7 +253,10 @@ func (client *client) connection() {
 				log.Println(client.guildID, "sessionDescription complete")
 			case voice_opcode.Resumed:
 				log.Println(client.guildID, "Resumed")
-				client.udpConnect()
+				client.pauseWait.L.Lock()
+				client.pausing = false
+				client.pauseWait.Broadcast()
+				client.pauseWait.L.Unlock()
 			}
 		}
 	}()
@@ -373,7 +388,7 @@ func (client *client) udpKeepAlive(i time.Duration) {
 		}
 
 		select {
-		case <-client.vcCtx.Done():
+		case <-client.udpCtx.Done():
 			return
 		case <-client.ctx.Done():
 			return

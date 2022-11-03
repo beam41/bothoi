@@ -239,7 +239,7 @@ func (client *client) sendSong(encodeSession *dca.EncodeSession) bool {
 		packet := secretbox.Seal(header, frame, &nonce, &client.sessionDescription.SecretKey)
 
 		select {
-		case <-client.vcCtx.Done():
+		case <-client.udpCtx.Done():
 			return false
 		case <-client.ctx.Done():
 			return true
@@ -252,7 +252,6 @@ func (client *client) sendSong(encodeSession *dca.EncodeSession) bool {
 			log.Println(client.guildID, "player udp err", err)
 			client.connectionRestart(true)
 			return false
-
 		}
 
 		if (sequenceNumber) == 0xFFFF {
