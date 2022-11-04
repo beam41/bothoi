@@ -36,6 +36,8 @@ type Client struct {
 	interactionExecutorList map[string]func(*discord_models.Interaction)
 	newSessionIDHandler     func(types.Snowflake, string)
 	waitResume              chan struct{}
+	restarting              bool
+	restartingMutex         sync.Mutex
 }
 
 func NewClient() *Client {
@@ -60,7 +62,15 @@ func (client *Client) gatewayConnWriteJSON(v any) (err error) {
 }
 
 func (client *Client) gatewayConnCloseRestart() {
+	client.restartingMutex.Lock()
+	if client.restarting {
+		client.restartingMutex.Unlock()
+		return
+	}
+	client.restarting = true
+	client.restartingMutex.Unlock()
 	defer func() {
+		client.restarting = false
 		if err := recover(); err != nil {
 			log.Println("gatewayConnCloseRestart panic occurred:", err)
 		}

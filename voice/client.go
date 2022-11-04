@@ -54,6 +54,7 @@ type client struct {
 	udpCtxCancel       context.CancelFunc
 	resume             bool
 	waitResume         chan struct{}
+	restarting         bool
 }
 
 func (client *client) connWriteJSON(v any) (err error) {
@@ -72,7 +73,17 @@ func (client *client) connCloseNormal() {
 // reconnecting for voice is really just guessing work right now
 // discord docs is really stub on this topic
 func (client *client) connectionRestart(resume bool) {
+	client.Lock()
+	if client.restarting {
+		client.Unlock()
+		return
+	}
+	client.restarting = true
+	client.Unlock()
 	defer func() {
+		client.Lock()
+		client.restarting = false
+		client.Unlock()
 		if err := recover(); err != nil {
 			log.Println(client.guildID, "voiceRestart panic occurred:", err)
 		}
@@ -119,6 +130,7 @@ func (client *client) connectionRestart(resume bool) {
 				break
 			}
 		}
+		log.Println(client.guildID, "wait new state")
 		sessionID := <-sessionIDChan
 		voiceServer := <-voiceServerChan
 		client.clm.gatewayClient.CleanVoiceInstantiateChan(client.guildID)
