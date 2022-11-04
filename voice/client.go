@@ -141,7 +141,7 @@ func (client *client) connect() {
 		ctx, cancel := context.WithCancel(context.Background())
 		client.vcCtx = ctx
 		client.vcCtxCancel = cancel
-		if client.udpCtx.Err() != nil {
+		if client.udpCtx == nil || client.udpCtx.Err() != nil {
 			ctxUdp, cancelUdp := context.WithCancel(context.Background())
 			client.udpCtx = ctxUdp
 			client.udpCtxCancel = cancelUdp
