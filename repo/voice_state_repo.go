@@ -11,6 +11,7 @@ func UpsertVoiceState(voiceState *discord_models.VoiceState) {
 	dbVoiceStates := db_models.VoiceState{
 		UserID:                  voiceState.UserID,
 		GuildID:                 voiceState.GuildID,
+		ChannelID:               voiceState.ChannelID,
 		SessionID:               voiceState.SessionID,
 		Deaf:                    voiceState.Deaf,
 		Mute:                    voiceState.Mute,
@@ -20,7 +21,6 @@ func UpsertVoiceState(voiceState *discord_models.VoiceState) {
 		SelfVideo:               voiceState.SelfVideo,
 		Suppress:                voiceState.Suppress,
 		RequestToSpeakTimestamp: voiceState.RequestToSpeakTimestamp,
-		ChannelID:               voiceState.ChannelID,
 	}
 	db.Clauses(clause.OnConflict{
 		UpdateAll: true,

@@ -3,10 +3,10 @@ package db_models
 import "bothoi/models/types"
 
 type VoiceState struct {
-	SessionID               string           `gorm:"primaryKey"`
-	UserID                  types.Snowflake  `gorm:"index,type:INTEGER"`
-	GuildID                 types.Snowflake  `gorm:"index,type:INTEGER"`
+	UserID                  types.Snowflake  `gorm:"primaryKey;not null;type:INTEGER"`
+	GuildID                 types.Snowflake  `gorm:"primaryKey;not null;type:INTEGER"`
 	ChannelID               *types.Snowflake `gorm:"type:text"`
+	SessionID               string
 	Deaf                    bool
 	Mute                    bool
 	SelfDeaf                bool
