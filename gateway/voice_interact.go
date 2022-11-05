@@ -8,14 +8,15 @@ import (
 
 // VoiceClientStart start the client if not started already
 func (client *Client) VoiceChannelJoin(guildID, channelID types.Snowflake, sessionIDChan chan<- string, voiceServerChan chan<- *discord_models.VoiceServer) error {
+	client.voiceInstantiateList.Lock()
+	client.voiceInstantiateList.list[guildID] = voiceInstantiateChan{sessionIDChan, voiceServerChan}
+	client.voiceInstantiateList.Unlock()
 	createVoice := discord_models.NewVoiceStateUpdate(guildID, &channelID, false, true)
 	err := client.gatewayConnWriteJSON(createVoice)
 	if err != nil {
+		client.CleanVoiceInstantiateChan(guildID)
 		return err
 	}
-	client.voiceInstantiateList.Lock()
-	defer client.voiceInstantiateList.Unlock()
-	client.voiceInstantiateList.list[guildID] = voiceInstantiateChan{sessionIDChan, voiceServerChan}
 	return nil
 }
 
