@@ -65,6 +65,9 @@ func (client *Client) dispatchHandler(payload discord_models.GatewayPayload) {
 		}
 		repo.UpsertVoiceState(data)
 		if data.UserID == config.BotID {
+			if data.ChannelID == nil {
+				return
+			}
 			client.voiceInstantiateList.RLock()
 			defer client.voiceInstantiateList.RUnlock()
 			if chanMap, ok := client.voiceInstantiateList.list[data.GuildID]; ok {
