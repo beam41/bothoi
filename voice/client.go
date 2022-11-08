@@ -222,10 +222,11 @@ func (client *client) connection() {
 				}
 				client.RUnlock()
 				log.Println(client.guildID, "read err", err)
-				if websocket.IsCloseError(err, 4006, 4014) {
-					client.connectionRestart(false)
-				} else {
+				if websocket.IsCloseError(err, 4015) {
 					client.connectionRestart(true)
+
+				} else {
+					client.connectionRestart(false)
 				}
 				return
 			}
